@@ -2,8 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a2540">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Excel Data Combiner Tool</title>
+<meta property="og:title" content="Excel Data Combiner Tool">
+<meta property="og:description" content="Merge multiple Excel or CSV files into one consolidated sheet. 100% client-side.">
+<meta name="twitter:card" content="summary_large_image">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 html, body { overflow-x: hidden; }
@@ -17,7 +22,7 @@ body {
 .page-header-bar { padding: 20px 24px 14px; background: #0a2540; }
 .page-title { font-size: 20px; font-weight: 700; color: #fff; letter-spacing: -0.2px; }
 .page-wrap { background: #fff; border-radius: 12px; overflow: hidden; }
-.tab-bar { display: flex; border-bottom: 1px solid #0a2540; background: #0a2540; overflow-x: auto; padding: 0 16px; }
+.tab-bar { display: flex; background: #0a2540; overflow-x: auto; padding: 0 16px; }
 .tab-btn { padding: 11px 20px; border: none; background: transparent; color: #fff; font-size: 13px; font-family: inherit; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; flex-shrink: 0; }
 .tab-btn:hover, .tab-btn.active { color: #fff; }
 .tab-btn.active { border-bottom-color: #fff; font-weight: 600; }
@@ -35,12 +40,24 @@ body {
 .form-row.two-col { grid-template-columns: 1fr 1fr; }
 .form-group { display: flex; flex-direction: column; gap: 5px; }
 .form-group label { font-size: 12px; color: #555; font-weight: 500; }
+.form-group label.hint-text { font-size: 12px; color: #6b7280; font-weight: 400; }
+.form-group label.chk-label { font-size: 12px; font-weight: 400; display: flex; align-items: center; gap: 4px; cursor: pointer; }
 .form-group label .req { color: #c2002f; margin-left: 2px; }
 select, input[type="number"] {
     height: 34px; border: 1px solid #d0d0d0; border-radius: 5px;
     padding: 0 10px; font-size: 13px; font-family: inherit; color: #333;
     background: #fff; outline: none; width: 100%;
 }
+.checklist-box {
+    border: 1px solid #d0d0d0; border-radius: 5px; height: 160px; overflow-y: auto;
+    background: #fff; padding: 6px 0; width: 100%;
+}
+.checklist-item {
+    display: flex; align-items: center; gap: 8px; padding: 6px 12px;
+    font-size: 13px; color: #333; cursor: pointer; user-select: none;
+}
+.checklist-item:hover { background: #f4f6f8; }
+.checklist-item input { width: 14px; height: 14px; margin: 0; accent-color: #0083c1; cursor: pointer; }
 select:focus, input:focus { border-color: #0083c1; box-shadow: 0 0 0 3px rgba(0,131,193,0.1); }
 select:disabled, input:disabled { background: #f7f7f7; color: #aaa; cursor: not-allowed; }
 .btn-row { display: flex; justify-content: flex-end; margin-top: 10px; gap: 10px; }
@@ -77,7 +94,7 @@ select:disabled, input:disabled { background: #f7f7f7; color: #aaa; cursor: not-
 .drag-drop-zone .drop-hint span { color: #0083c1; font-weight: 600; cursor: pointer; }
 .drag-drop-zone .drop-types { font-size: 10px; color: #999; }
 .file-list-container {
-    border: 1px solid #e6e8eb; border-radius: 6px; overflow: hidden; margin: 14px 0;
+    border: 1px solid #e6e8eb; border-radius: 6px; overflow: hidden; margin: 0 0 14px;
 }
 .file-list-header {
     display: grid; grid-template-columns: 30px 1fr 50px 60px;
@@ -140,6 +157,37 @@ select:disabled, input:disabled { background: #f7f7f7; color: #aaa; cursor: not-
     padding: 9px 12px; font-family: 'Courier New', monospace;
     font-size: 11.5px; color: #1a1a2e; margin: 6px 0 4px; line-height: 1.8;
 }
+.transformation-showcase {
+    display: flex; gap: 16px; align-items: flex-start; justify-content: space-between;
+    margin-top: 10px;
+}
+.transformation-arrow {
+    flex-shrink: 0; color: #0083c1; font-size: 20px; font-weight: bold;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,131,193,0.1); width: 36px; height: 36px; border-radius: 50%;
+    margin-top: 40px;
+}
+.transformation-table-wrapper {
+    flex: 1; overflow-x: auto;
+}
+.transformation-table-wrapper h4 {
+    font-size: 12px; color: #1a1a2e; margin-bottom: 10px; font-weight: 700; text-align: left;
+}
+.table-container {
+    border: 1px solid #e6e8eb; border-radius: 6px; overflow: hidden;
+}
+.example-table {
+    width: 100%; border-collapse: collapse; font-family: inherit; font-size: 11px; text-align: left;
+}
+.example-table th, .example-table td {
+    padding: 7px 10px; border-bottom: 1px solid #e6e8eb; white-space: nowrap;
+}
+.example-table tr:last-child th, .example-table tr:last-child td { border-bottom: none; }
+.example-table th { background: #f8fafc; font-weight: 600; color: #475569; }
+.example-table td { color: #334155; }
+.example-table .hl-keep { background-color: rgba(16, 185, 129, 0.08) !important; color: #059669 !important; font-weight: 500; }
+.example-table .hl-pivot { background-color: rgba(0, 131, 193, 0.08) !important; color: #006fa8 !important; font-weight: 500; }
+
 @media (max-width: 600px) {
     body { padding: 0; margin: 0; width: 100vw; overflow-x: hidden; background: #fff; }
     .page-container { padding: 0; margin: 0; width: 100%; max-width: 100vw; }
@@ -149,7 +197,13 @@ select:disabled, input:disabled { background: #f7f7f7; color: #aaa; cursor: not-
     .tab-btn { padding: 10px 13px; font-size: 12px; }
     .page-title { font-size: 20px; font-weight: 900; }
     .tool-card, .guide-card { padding: 16px; border-radius: 0; }
+    .transformation-showcase { flex-direction: row; gap: 4px; align-items: flex-start; justify-content: space-between; }
+    .transformation-arrow { transform: none; margin-top: 30px; width: 20px; height: 20px; font-size: 14px; }
+    .transformation-table-wrapper h4 { font-size: 10px; margin-bottom: 6px; }
+    .example-table { font-size: 9px; }
+    .example-table th, .example-table td { padding: 4px 4px; }
     .form-row.two-col { grid-template-columns: 1fr; }
+    .checklist-box { height: 110px; }
     .guide-card { display: none; }
     .guide-card.guide-visible { display: flex; }
     .btn-row .btn-secondary, .btn-row .btn-success { flex: 1; }
@@ -162,13 +216,15 @@ select:disabled, input:disabled { background: #f7f7f7; color: #aaa; cursor: not-
 <div class="page-container">
   <div class="page-wrap">
 
-    <div class="page-header-bar">
-      <div class="page-title">Excel Data Combiner</div>
-    </div>
+    <div style="background: #0a2540; padding-top: env(safe-area-inset-top);">
+      <div class="page-header-bar">
+        <div class="page-title">Excel Data Combiner</div>
+      </div>
 
-    <div class="tab-bar">
-      <button class="tab-btn active" id="tab-tool" onclick="showTab('tool')">Combiner Tool</button>
-      <button class="tab-btn" id="tab-guide" onclick="showTab('guide')">User Guide</button>
+      <div class="tab-bar">
+        <button class="tab-btn active" id="tab-tool" onclick="showTab('tool')">Combiner Tool</button>
+        <button class="tab-btn" id="tab-guide" onclick="showTab('guide')">User Guide</button>
+      </div>
     </div>
 
     <div class="main-panel">
@@ -176,7 +232,8 @@ select:disabled, input:disabled { background: #f7f7f7; color: #aaa; cursor: not-
       <div class="tool-card" id="cardTool">
         <div class="card-header">
           <div class="card-header-text">
-            <div class="card-title">Import File</div>
+            <div class="card-title">Import Files</div>
+            <div class="card-subtitle">Drag and drop multiple Excel or CSV files</div>
           </div>
         </div>
 
@@ -198,7 +255,15 @@ select:disabled, input:disabled { background: #f7f7f7; color: #aaa; cursor: not-
           <div class="file-list-body" id="fileListBody"></div>
         </div>
 
-        <div class="guide-section-title">Validate</div>
+        <hr style="border:none;border-top:1px solid #e6e8eb;margin:14px 0;">
+
+        <div class="card-header" style="margin-bottom:14px;">
+          <div class="card-header-text">
+            <div class="card-title">Settings</div>
+            <div class="card-subtitle">Configure how files are combined</div>
+          </div>
+        </div>
+
         <div class="form-row two-col">
           <div class="form-group">
             <label>Start Row: <span class="req">*</span></label>
@@ -240,32 +305,26 @@ select:disabled, input:disabled { background: #f7f7f7; color: #aaa; cursor: not-
         <div class="guide-section-title">How to use</div>
         <div class="guide-step">
           <span class="step-num">1</span>
-          <div class="step-body"><strong>Import files.</strong> Drag and drop your Excel files or click <strong>browse files</strong> to select them.</div>
+          <div class="step-body"><strong>Import files.</strong> Drag and drop your Excel or CSV files or click <strong>browse files</strong> to select them.</div>
         </div>
         <div class="guide-step">
           <span class="step-num">2</span>
-          <div class="step-body"><strong>Set start row.</strong> Choose <strong>Row 1 (Include Heading)</strong> to keep headers, <strong>Row 2 (Skip Heading)</strong> to skip, or <strong>Custom Row</strong> for a specific row.</div>
+          <div class="step-body"><strong>Set start row.</strong> Choose <strong>Row 1</strong> to keep headers, <strong>Row 2</strong> to skip the heading, or <strong>Custom Row</strong> for a specific starting row.</div>
         </div>
         <div class="guide-step">
           <span class="step-num">3</span>
-          <div class="step-body"><strong>Select sheet.</strong> Choose the sheet to combine from the dropdown. All available sheets from the first file will be listed.</div>
+          <div class="step-body"><strong>Select sheet.</strong> Pick the sheet to combine from the dropdown. Available sheets from all imported files are listed.</div>
         </div>
         <div class="guide-step">
           <span class="step-num">4</span>
-          <div class="step-body"><strong>Review headers.</strong> Green means all headers match. Grey shows which file and column are missing. Change sheet or toggle files to re-check.</div>
+          <div class="step-body"><strong>Review headers.</strong> Green status means all headers match. Grey shows mismatches — toggle files or change sheet to re-check.</div>
         </div>
-        <div class="guide-step">
-          <span class="step-num">5</span>
-          <div class="step-body"><strong>Combine.</strong> Click <strong>Combine Files</strong> to merge all data into one sheet.</div>
-        </div>
-
         <hr class="guide-divider">
 
-        <div class="guide-section-title">Start Row Options</div>
-        <div class="guide-formula">
-          Row 1 (Include Heading) — Headers are included in the output<br>
-          Row 2 (Skip Heading) — Skips the first row, data starts from row 2<br>
-          Custom Row — Enter any specific row number
+        <div class="guide-formula" style="margin:0;">
+          <strong>Row 1 (Include Heading)</strong> — Each file's heading row is included in the output<br>
+          <strong>Row 2 (Skip Heading)</strong> — Heading row is taken from the first file only; subsequent files skip row 1<br>
+          <strong>Custom Row (3)</strong> — Skips first 2 rows of each file (header + 1st data row)
         </div>
 
       </div>
@@ -576,9 +635,13 @@ async function combineFiles() {
       if (r.ok && r.sheetData) {
         var sd = r.sheetData[sheet] || r.sheetData[Object.keys(r.sheetData)[0]];
         if (sd && sd.length) {
-          var rowStart = Math.max(0, startRow - 1);
-          if (headers === null && mode !== '2') headers = sd[0];
-          for (var r2 = Math.max(1, rowStart); r2 < sd.length; r2++) allData.push(sd[r2]);
+          if (mode === '1') {
+            for (var r2 = 0; r2 < sd.length; r2++) allData.push(sd[r2]);
+          } else {
+            if (headers === null) headers = sd[0];
+            var rowStart = mode === 'custom' ? Math.max(0, startRow - 1) : 1;
+            for (var r2 = rowStart; r2 < sd.length; r2++) allData.push(sd[r2]);
+          }
         }
       }
     } catch(e) { console.error('Error processing', file.name, e); }
@@ -589,7 +652,7 @@ async function combineFiles() {
   $('progressText').textContent = 'Generating output file...';
   await yieldToMain();
   setTimeout(function() {
-    var out = headers ? [headers].concat(allData) : allData;
+    var out = mode === '1' ? allData : (headers ? [headers].concat(allData) : allData);
     var ws = XLSX.utils.aoa_to_sheet(out);
     if (headers) ws['!cols'] = headers.map(function(h) { return { wch: Math.min(String(h||'').length + 2, 30) }; });
     var wb = XLSX.utils.book_new();
