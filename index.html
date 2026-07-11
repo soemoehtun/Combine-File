@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Excel Data Combiner Tool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+html, body { overflow-x: hidden; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: linear-gradient(145deg, #eef0f4 0%, #e4e6eb 100%);
+    min-height: 100vh; color: #333; font-size: 13px;
+}
+.page-container { max-width: 700px; margin: 0 auto; padding: 40px 24px 48px; }
+.page-header-bar { padding: 20px 24px 14px; background: #0a2540; }
+.page-title { font-size: 20px; font-weight: 700; color: #fff; letter-spacing: -0.2px; }
+.page-wrap { background: #fff; border-radius: 12px; overflow: hidden; }
+.tab-bar { display: flex; border-bottom: 1px solid #0a2540; background: #0a2540; overflow-x: auto; padding: 0 16px; }
+.tab-btn { padding: 11px 20px; border: none; background: transparent; color: #fff; font-size: 13px; font-family: inherit; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; flex-shrink: 0; }
+.tab-btn:hover, .tab-btn.active { color: #fff; }
+.tab-btn.active { border-bottom-color: #fff; font-weight: 600; }
+.tool-card {
+    background: #fff; border-radius: 10px;
+    padding: 24px 28px 28px; display: flex; flex-direction: column;
+}
+.card-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 6px; padding-bottom: 6px;
+}
+.card-header-text .card-title { font-size: 14px; font-weight: 700; color: #1a1a2e; }
+.card-header-text .card-subtitle { font-size: 11px; color: #6b7280; margin-top: 2px; }
+.form-row { display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 14px; align-items: end; }
+.form-row.two-col { grid-template-columns: 1fr 1fr; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group label { font-size: 12px; color: #555; font-weight: 500; }
+.form-group label .req { color: #c2002f; margin-left: 2px; }
+select, input[type="number"] {
+    height: 34px; border: 1px solid #d0d0d0; border-radius: 5px;
+    padding: 0 10px; font-size: 13px; font-family: inherit; color: #333;
+    background: #fff; outline: none; width: 100%;
+}
+select:focus, input:focus { border-color: #0083c1; box-shadow: 0 0 0 3px rgba(0,131,193,0.1); }
+select:disabled, input:disabled { background: #f7f7f7; color: #aaa; cursor: not-allowed; }
+.btn-row { display: flex; justify-content: flex-end; margin-top: 10px; gap: 10px; }
+.btn-primary {
+    background: linear-gradient(135deg, #0083c1, #006fa8); color: #fff; border: none;
+    border-radius: 5px; padding: 0 28px; height: 34px; font-size: 13px;
+    font-family: inherit; font-weight: 600; cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,131,193,0.25);
+}
+.btn-primary:hover { background: linear-gradient(135deg, #006fa8, #005a8c); }
+.btn-primary:disabled { background: #ccc; box-shadow: none; cursor: not-allowed; }
+.btn-secondary {
+    background: transparent; color: #666; border: 1px solid #d0d0d0;
+    border-radius: 5px; padding: 0 18px; height: 34px; font-size: 13px;
+    font-family: inherit; cursor: pointer;
+}
+.btn-secondary:hover { background: #f5f5f5; border-color: #bbb; }
+.btn-success {
+    background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: none;
+    border-radius: 5px; padding: 0 28px; height: 34px; font-size: 13px;
+    font-family: inherit; font-weight: 600; cursor: pointer;
+    box-shadow: 0 2px 6px rgba(16,185,129,0.25);
+}
+.btn-success:hover { background: linear-gradient(135deg, #059669, #047857); }
+.btn-success:disabled { background: linear-gradient(135deg, #10b981, #059669); box-shadow: none; cursor: not-allowed; }
+.drag-drop-zone {
+    border: 2px dashed #d0d0d0; border-radius: 8px;
+    padding: 20px; text-align: center; cursor: pointer; margin: 0 0 14px;
+}
+.drag-drop-zone:hover, .drag-drop-zone.drag-over { border-color: #0083c1; background: rgba(0,131,193,0.03); }
+.drag-drop-zone .drop-icon { font-size: 24px; margin-bottom: 6px; color: #6b7280; }
+.drag-drop-zone .drop-text { font-size: 13px; color: #555; }
+.drag-drop-zone .drop-hint { font-size: 11px; color: #6b7280; }
+.drag-drop-zone .drop-hint span { color: #0083c1; font-weight: 600; cursor: pointer; }
+.drag-drop-zone .drop-types { font-size: 10px; color: #999; }
+.file-list-container {
+    border: 1px solid #e6e8eb; border-radius: 6px; overflow: hidden; margin: 14px 0;
+}
+.file-list-header {
+    display: grid; grid-template-columns: 30px 1fr 50px 60px;
+    background: #f8f9fb; border-bottom: 1px solid #e6e8eb;
+    padding: 8px 12px; font-size: 11px; font-weight: 600;
+    color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.file-list-body { max-height: 240px; overflow-y: auto; }
+.file-item { padding: 10px 12px; border-bottom: 1px solid #f0f2f5; font-size: 12px; color: #333; }
+.file-item:nth-child(even) { background: #fafbfc; }
+.file-item:hover { background: #f0f4f8; }
+.file-item-row { display: flex; align-items: center; gap: 8px; }
+.file-item .file-check { width: 16px; height: 16px; accent-color: #0083c1; cursor: pointer; flex-shrink: 0; }
+.file-item .file-name { font-weight: 500; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.file-item .file-remove { color: #c2002f; cursor: pointer; font-size: 11px; flex-shrink: 0; }
+.file-item .file-remove:hover { text-decoration: underline; }
+.file-progress-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; padding-left: 24px; }
+.file-progress-track { flex: 1; height: 8px; background: #d0d5dd; border-radius: 4px; overflow: hidden; }
+.file-progress-fill { height: 100%; background: #0083c1; border-radius: 4px; transition: width 0.3s; }
+.file-progress-pct { font-size: 11px; color: #0083c1; font-weight: 700; min-width: 36px; text-align: right; }
+.file-size { font-size: 11px; color: #999; flex-shrink: 0; min-width: 50px; text-align: right; }
+.file-status-row { display: flex; align-items: center; gap: 6px; margin-top: 4px; padding-left: 24px; }
+.file-status { font-size: 11px; font-weight: 600; }
+.file-status.done { color: #10b981; }
+.file-status.error { color: #c2002f; }
+.file-spinner {
+    display: inline-block; width: 12px; height: 12px;
+    border: 2px solid #d0d5dd; border-top-color: #0083c1; border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.file-status-text { font-size: 11px; color: #6b7280; }
+.progress-container { margin: 14px 0; display: none; }
+.progress-bar { height: 6px; background: #e6e8eb; border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, #0083c1, #10b981); width: 0%; border-radius: 3px; }
+.progress-text { font-size: 11px; color: #6b7280; margin-top: 6px; text-align: center; }
+.header-status {
+    margin: 10px 0; padding: 10px 14px; border-radius: 6px; font-size: 12px;
+}
+.header-status.status-ok { background: #d1fae5; border: 1px solid #6ee7b7; color: #065f46; }
+.header-status.status-idle { background: #f4f6f8; border: 1px solid #e0e4e8; color: #6b7280; }
+.header-status .status-title { font-weight: 700; margin-bottom: 2px; }
+.header-status #headerStatusDetails { overflow-x: auto; }
+.guide-card {
+    background: #fff; border-radius: 10px;
+    padding: 24px 28px 28px; display: none; flex-direction: column;
+}
+.guide-section-title { font-size: 14px; font-weight: 700; color: #1a1a2e; margin: 14px 0 14px; }
+.guide-divider { border: none; border-top: 1px solid #e6e8eb; margin: 16px 0; }
+.guide-step { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; }
+.guide-step .step-num {
+    flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
+    background: linear-gradient(135deg, #0083c1, #005d8f); color: #fff;
+    font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+}
+.guide-step .step-body { font-size: 12px; color: #444; line-height: 1.65; }
+.guide-step .step-body strong { color: #1a1a2e; }
+.guide-formula {
+    background: #f4f6f8; border: 1px solid #e0e4e8; border-radius: 6px;
+    padding: 9px 12px; font-family: 'Courier New', monospace;
+    font-size: 11.5px; color: #1a1a2e; margin: 6px 0 4px; line-height: 1.8;
+}
+@media (max-width: 600px) {
+    body { padding: 0; margin: 0; width: 100vw; overflow-x: hidden; background: #fff; }
+    .page-container { padding: 0; margin: 0; width: 100%; max-width: 100vw; }
+    .page-wrap { border: none; border-radius: 0; width: 100%; }
+    .page-header-bar { padding: 12px 16px 10px; background: #0a2540; margin: 0; }
+    .tab-bar { background: #0a2540; border-bottom: none; padding: 0 4px; }
+    .tab-btn { padding: 10px 13px; font-size: 12px; }
+    .page-title { font-size: 20px; font-weight: 900; }
+    .tool-card, .guide-card { padding: 16px; border-radius: 0; }
+    .form-row.two-col { grid-template-columns: 1fr; }
+    .guide-card { display: none; }
+    .guide-card.guide-visible { display: flex; }
+    .btn-row .btn-secondary, .btn-row .btn-success { flex: 1; }
+    #headerStatusDetails { word-break: break-word; }
+}
+</style>
+</head>
+<body>
+
+<div class="page-container">
+  <div class="page-wrap">
+
+    <div class="page-header-bar">
+      <div class="page-title">Excel Data Combiner</div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tab-tool" onclick="showTab('tool')">Combiner Tool</button>
+      <button class="tab-btn" id="tab-guide" onclick="showTab('guide')">User Guide</button>
+    </div>
+
+    <div class="main-panel">
+
+      <div class="tool-card" id="cardTool">
+        <div class="card-header">
+          <div class="card-header-text">
+            <div class="card-title">Import File</div>
+          </div>
+        </div>
+
+        <div class="drag-drop-zone" id="dropZone" onclick="selectFiles()">
+          <div class="drop-icon">📁</div>
+          <div class="drop-text">Drag & drop Excel files here</div>
+          <div class="drop-hint">or <span>browse files</span> <span class="drop-types">(.xlsx, .xls, .csv, .txt)</span></div>
+        </div>
+
+        <input type="file" id="fileInput" multiple accept=".xlsx,.xls,.csv,.txt" style="display:none" onchange="handleFiles(this.files)">
+
+        <div class="file-list-container" id="fileListContainer" style="display:none;">
+          <div class="file-list-header">
+            <span></span>
+            <span>File Name</span>
+            <span>Size</span>
+            <span></span>
+          </div>
+          <div class="file-list-body" id="fileListBody"></div>
+        </div>
+
+        <div class="guide-section-title">Validate</div>
+        <div class="form-row two-col">
+          <div class="form-group">
+            <label>Start Row: <span class="req">*</span></label>
+            <select id="startRowMode" onchange="toggleStartRowMode()">
+              <option value="1">Row 1 (Include Heading)</option>
+              <option value="2">Row 2 (Skip Heading)</option>
+              <option value="custom">Custom Row...</option>
+            </select>
+          </div>
+          <div class="form-group" id="customRowGroup" style="display:none;">
+            <label>Custom Start Row: <span class="req">*</span></label>
+            <input type="number" id="startRow" value="3" min="1" placeholder="Enter row number">
+          </div>
+          <div class="form-group" id="sheetGroup">
+            <label>Select Sheet: <span class="req">*</span></label>
+            <select id="sheetSelect" disabled onchange="checkHeaders()">
+              <option value="">Import files first...</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="header-status status-idle" id="headerStatus">
+          <div class="status-title">Header Check</div>
+          <div id="headerStatusDetails">Import files to check column headers.</div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn-secondary" onclick="clearAll()">Clear All</button>
+          <button class="btn-success" id="btnCombine" onclick="combineFiles()" disabled>Combine Files</button>
+        </div>
+
+        <div class="progress-container" id="progressContainer">
+          <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+          <div class="progress-text" id="progressText">Processing...</div>
+        </div>
+      </div>
+
+      <div class="guide-card" id="cardGuide">
+        <div class="guide-section-title">How to use</div>
+        <div class="guide-step">
+          <span class="step-num">1</span>
+          <div class="step-body"><strong>Import files.</strong> Drag and drop your Excel files or click <strong>browse files</strong> to select them.</div>
+        </div>
+        <div class="guide-step">
+          <span class="step-num">2</span>
+          <div class="step-body"><strong>Set start row.</strong> Choose <strong>Row 1 (Include Heading)</strong> to keep headers, <strong>Row 2 (Skip Heading)</strong> to skip, or <strong>Custom Row</strong> for a specific row.</div>
+        </div>
+        <div class="guide-step">
+          <span class="step-num">3</span>
+          <div class="step-body"><strong>Select sheet.</strong> Choose the sheet to combine from the dropdown. All available sheets from the first file will be listed.</div>
+        </div>
+        <div class="guide-step">
+          <span class="step-num">4</span>
+          <div class="step-body"><strong>Review headers.</strong> Green means all headers match. Grey shows which file and column are missing. Change sheet or toggle files to re-check.</div>
+        </div>
+        <div class="guide-step">
+          <span class="step-num">5</span>
+          <div class="step-body"><strong>Combine.</strong> Click <strong>Combine Files</strong> to merge all data into one sheet.</div>
+        </div>
+
+        <hr class="guide-divider">
+
+        <div class="guide-section-title">Start Row Options</div>
+        <div class="guide-formula">
+          Row 1 (Include Heading) — Headers are included in the output<br>
+          Row 2 (Skip Heading) — Skips the first row, data starts from row 2<br>
+          Custom Row — Enter any specific row number
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+var files = [];
+var isImporting = false;
+var headerCheckVersion = 0;
+
+function $(id) { return document.getElementById(id); }
+
+function yieldToMain() { return new Promise(function(r) { setTimeout(r, 0); }); }
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+function getSheet(wb, target) {
+  if (target && wb.SheetNames.indexOf(target) !== -1) return wb.Sheets[target];
+  if (wb.SheetNames.length > 0) return wb.Sheets[wb.SheetNames[0]];
+  return null;
+}
+
+function parseXLSX(buffer, opts) {
+  return new Promise(function(resolve) {
+    setTimeout(function() {
+      try {
+        var data = new Uint8Array(buffer);
+        if (opts.headersOnly) {
+          var wb = XLSX.read(data, { type: 'array', sheetRows: 1 });
+          var ws = getSheet(wb, opts.targetSheet);
+          resolve({ ok: true, headers: ws ? (XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })[0] || []) : [] });
+        } else {
+          var wb = XLSX.read(data, { type: 'array', sheetRows: opts.withData ? undefined : 0 });
+          var result = { ok: true, sheets: wb.SheetNames };
+          if (opts.withData) {
+            result.sheetData = {};
+            var ws = getSheet(wb, opts.targetSheet);
+            if (ws) result.sheetData[opts.targetSheet || wb.SheetNames[0]] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+          }
+          resolve(result);
+        }
+      } catch(err) {
+        resolve({ ok: false, error: err.message || String(err) });
+      }
+    }, 0);
+  });
+}
+
+function readFileAsArrayBuffer(file) {
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onload = function() { resolve(reader.result); };
+    reader.onerror = function() { reject(reader.error); };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function toggleStartRowMode() {
+  var mode = $('startRowMode').value;
+  $('customRowGroup').style.display = mode === 'custom' ? 'block' : 'none';
+  if (mode !== 'custom') $('startRow').value = mode;
+}
+
+function showTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+  $('tab-' + tab).classList.add('active');
+  $('cardTool').style.display = tab === 'tool' ? 'flex' : 'none';
+  $('cardGuide').style.display = 'none';
+  $('cardGuide').classList.remove('guide-visible');
+  if (tab === 'guide') {
+    $('cardGuide').style.display = 'flex';
+    if (window.innerWidth <= 600) $('cardGuide').classList.add('guide-visible');
+  }
+}
+
+function selectFiles() { if (!isImporting) $('fileInput').click(); }
+
+function handleFiles(fileList) {
+  var newFiles = [];
+  for (var i = 0; i < fileList.length; i++) {
+    var file = fileList[i];
+    if (!files.find(function(f) { return f.name === file.name; })) {
+      var entry = { name: file.name, selected: true, file: file, status: 'pending', sheets: [] };
+      files.push(entry);
+      newFiles.push(entry);
+    }
+  }
+  if (newFiles.length === 0) return;
+  rebuildFileList();
+  readAllFiles(newFiles).catch(function() { isImporting = false; updateCombineButton(); });
+}
+
+function rebuildFileList() {
+  var container = $('fileListContainer');
+  var body = $('fileListBody');
+  if (files.length === 0) { container.style.display = 'none'; return; }
+  container.style.display = 'block';
+  body.innerHTML = '';
+  files.forEach(function(f, i) {
+    var el = document.createElement('div');
+    el.className = 'file-item';
+    el.id = 'fitem-' + i;
+    var statusText = '';
+    if (f.status === 'reading') statusText = '<div class="file-status-row"><span class="file-spinner"></span><span class="file-status-text">Reading file...</span></div>';
+    else if (f.status === 'parsing') statusText = '<div class="file-status-row"><span class="file-spinner"></span><span class="file-status-text">Parsing sheet names...</span></div>';
+    else if (f.status === 'done') statusText = '<div class="file-status-row"><span class="file-status done">' + (f.statusExtra || 'Done') + '</span></div>';
+    else if (f.status === 'error') statusText = '<div class="file-status-row"><span class="file-status error">Error: ' + (f.statusExtra || 'Failed') + '</span></div>';
+    el.innerHTML =
+      '<div class="file-item-row">' +
+        '<input type="checkbox" class="file-check" ' + (f.selected ? 'checked' : '') + ' onchange="toggleFile(' + i + ')">' +
+        '<span class="file-name" title="' + f.name + '">' + f.name + '</span>' +
+        '<span class="file-size">' + formatSize(f.file.size) + '</span>' +
+        '<span class="file-remove" onclick="removeFile(' + i + ')">Remove</span>' +
+      '</div>' + statusText;
+    body.appendChild(el);
+  });
+  updateCombineButton();
+}
+
+function setFileStatus(index, status, extra) {
+  files[index].status = status;
+  files[index].statusExtra = extra || '';
+  var el = $('fitem-' + index);
+  if (!el) return;
+  var existing = el.querySelector('.file-status-row');
+  if (existing) existing.remove();
+  var existingProg = el.querySelector('.file-progress-row');
+  if (existingProg) existingProg.remove();
+  el.insertAdjacentHTML('beforeend',
+    status === 'reading' ? '<div class="file-status-row"><span class="file-spinner"></span><span class="file-status-text">Reading file...</span></div>' :
+    status === 'parsing' ? '<div class="file-status-row"><span class="file-spinner"></span><span class="file-status-text">Parsing sheet names...</span></div>' :
+    status === 'done' ? '<div class="file-status-row"><span class="file-status done">' + (extra || 'Done') + '</span></div>' :
+    status === 'error' ? '<div class="file-status-row"><span class="file-status error">Error: ' + (extra || 'Failed') + '</span></div>' : '');
+  updateCombineButton();
+}
+
+function showFileProgress(index, pct) {
+  var el = $('fitem-' + index);
+  if (!el) return;
+  var prog = el.querySelector('.file-progress-row');
+  if (!prog) {
+    prog = document.createElement('div');
+    prog.className = 'file-progress-row';
+    prog.innerHTML = '<div class="file-progress-track"><div class="file-progress-fill"></div></div><span class="file-progress-pct"></span>';
+    el.appendChild(prog);
+  }
+  prog.querySelector('.file-progress-fill').style.width = pct + '%';
+  prog.querySelector('.file-progress-pct').textContent = pct + '%';
+}
+
+function updateCombineButton() {
+  $('btnCombine').disabled = !files.some(function(f) { return f.selected && f.status === 'done'; }) || isImporting;
+}
+
+function toggleFile(index) { files[index].selected = !files[index].selected; updateCombineButton(); checkHeaders(); }
+
+function removeFile(index) {
+  files.splice(index, 1);
+  rebuildFileList();
+  refreshSheetDropdown();
+  checkHeaders();
+}
+
+function clearAll() {
+  files = [];
+  isImporting = false;
+  headerCheckVersion++;
+  $('fileListContainer').style.display = 'none';
+  $('fileListBody').innerHTML = '';
+  $('sheetSelect').disabled = true;
+  $('sheetSelect').innerHTML = '<option value="">Import files first...</option>';
+  $('fileInput').value = '';
+  $('startRowMode').value = '1';
+  toggleStartRowMode();
+  $('btnCombine').disabled = true;
+  $('progressContainer').style.display = 'none';
+  var hs = $('headerStatus'), hd = $('headerStatusDetails');
+  if (hs) hs.className = 'header-status status-idle';
+  if (hd) hd.textContent = 'Import files to check column headers.';
+}
+
+function refreshSheetDropdown() {
+  var allSheets = {};
+  files.forEach(function(f) { if (f.sheets) f.sheets.forEach(function(s) { allSheets[s] = true; }); });
+  var sorted = Object.keys(allSheets).sort();
+  var select = $('sheetSelect');
+  select.innerHTML = '';
+  if (sorted.length === 0) {
+    select.disabled = true;
+    select.innerHTML = '<option value="">Import files first...</option>';
+  } else {
+    select.disabled = false;
+    sorted.forEach(function(name, i) {
+      var opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      if (i === 0) opt.selected = true;
+      select.appendChild(opt);
+    });
+  }
+}
+
+async function checkHeaders() {
+  var el = $('headerStatus'), details = $('headerStatusDetails');
+  if (!el || !details) return;
+  var myVer = ++headerCheckVersion;
+  var sel = files.filter(function(f) { return f.selected && f.status === 'done'; });
+  if (sel.length < 2) {
+    el.className = 'header-status status-idle';
+    details.textContent = sel.length === 0 ? 'Import files to check column headers.' : 'Import at least 2 files to compare headers.';
+    return;
+  }
+  el.className = 'header-status status-idle';
+  details.innerHTML = '<span class="file-spinner" style="margin-right:4px;"></span> Checking headers...';
+  await yieldToMain();
+  var sheet = $('sheetSelect').value, allHeaders = [];
+  for (var i = 0; i < sel.length; i++) {
+    if (myVer !== headerCheckVersion) return;
+    try {
+      var buf = sel[i]._buffer ? sel[i]._buffer.slice(0) : await readFileAsArrayBuffer(sel[i].file);
+      var r = await parseXLSX(buf, { headersOnly: true, targetSheet: sheet });
+      allHeaders.push({ name: sel[i].name, headers: (r.ok && r.headers) ? r.headers : [], error: r.ok ? null : (r.error || 'parse failed') });
+    } catch(e) { allHeaders.push({ name: sel[i].name, headers: [], error: e.message }); }
+    details.innerHTML = '<span class="file-spinner" style="margin-right:4px;"></span> Checking headers... (' + (i + 1) + '/' + sel.length + ')';
+    await yieldToMain();
+  }
+  if (myVer !== headerCheckVersion) return;
+  if (allHeaders.length < 2) { el.className = 'header-status status-idle'; details.textContent = 'Could not read headers from files.'; return; }
+  var ref = allHeaders[0].headers, mismatches = [];
+  for (var i = 1; i < allHeaders.length; i++) {
+    var cur = allHeaders[i];
+    if (cur.error) { mismatches.push({ name: cur.name, cols: [{ col: '-', exp: '(parse error)' }] }); continue; }
+    var max = Math.max(ref.length, cur.headers.length), cols = [];
+    for (var c = 0; c < max; c++)
+      if (String(ref[c]||'').toLowerCase().trim() !== String(cur.headers[c]||'').toLowerCase().trim())
+        cols.push({ col: c+1, exp: String(ref[c]||'(empty)') });
+    if (cols.length) mismatches.push({ name: cur.name, cols: cols });
+  }
+  if (mismatches.length === 0) {
+    el.className = 'header-status status-ok';
+    details.textContent = 'All ' + ref.length + ' headers match across ' + allHeaders.length + ' files.';
+  } else {
+    el.className = 'header-status status-idle';
+    var html = '<div style="font-family:monospace;font-size:11px;line-height:1.5;"><div>Mismatch (base: ' + escapeHTML(allHeaders[0].name) + ')</div>';
+    mismatches.forEach(function(m, idx) {
+      html += '<div style="display:grid;grid-template-columns:auto 1fr;padding-left:8px;min-width:0;">';
+      html += '<div style="white-space:pre;min-width:0;">' + ((idx === mismatches.length - 1) ? '  └─ ' : '  ├─ ') + escapeHTML(m.name) + '  →  </div>';
+      html += '<div style="white-space:pre-wrap;min-width:0;">' + m.cols.map(function(c) { return 'Col ' + c.col + ' (' + escapeHTML(c.exp) + ')'; }).join(', ') + '</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+    details.innerHTML = html;
+  }
+}
+
+async function readAllFiles(newFiles) {
+  isImporting = true;
+  updateCombineButton();
+  for (var i = 0; i < newFiles.length; i++) {
+    var f = newFiles[i], fi = files.indexOf(f);
+    setFileStatus(fi, 'reading');
+    showFileProgress(fi, 5);
+    try {
+      var buffer = await readFileAsArrayBuffer(f.file);
+      f._buffer = buffer;
+      await yieldToMain();
+      setFileStatus(fi, 'parsing');
+      showFileProgress(fi, 60);
+      await yieldToMain();
+      var r = await parseXLSX(buffer, { withData: false, targetSheet: $('sheetSelect').value || undefined });
+      if (r.ok) { f.sheets = r.sheets; setFileStatus(fi, 'done', r.sheets.length + ' sheet(s)'); }
+      else { setFileStatus(fi, 'error', r.error); }
+    } catch(e) { setFileStatus(fi, 'error', e.message); }
+    await yieldToMain();
+  }
+  isImporting = false;
+  try { refreshSheetDropdown(); rebuildFileList(); await checkHeaders(); } catch(e) { console.error(e); }
+}
+
+async function combineFiles() {
+  var sel = files.filter(function(f) { return f.selected && f.status === 'done'; });
+  if (!sel.length) return;
+  var sheet = $('sheetSelect').value;
+  if (!sheet) return;
+  var mode = $('startRowMode').value;
+  var startRow = mode === 'custom' ? parseInt($('startRow').value) || 1 : parseInt(mode);
+  isImporting = true;
+  $('btnCombine').disabled = true;
+  $('progressContainer').style.display = 'block';
+  $('progressFill').style.width = '0%';
+  $('progressText').textContent = 'Processing 0 of ' + sel.length + ' files...';
+  var allData = [], headers = null;
+  for (var idx = 0; idx < sel.length; idx++) {
+    var file = sel[idx];
+    $('progressText').textContent = 'Reading ' + file.name + ' (' + (idx + 1) + '/' + sel.length + ')...';
+    try {
+      var buf = await readFileAsArrayBuffer(file.file);
+      await yieldToMain();
+      $('progressText').textContent = 'Parsing ' + file.name + '...';
+      var r = await parseXLSX(buf, { withData: true, targetSheet: sheet });
+      if (r.ok && r.sheetData) {
+        var sd = r.sheetData[sheet] || r.sheetData[Object.keys(r.sheetData)[0]];
+        if (sd && sd.length) {
+          var rowStart = Math.max(0, startRow - 1);
+          if (headers === null && mode !== '2') headers = sd[0];
+          for (var r2 = Math.max(1, rowStart); r2 < sd.length; r2++) allData.push(sd[r2]);
+        }
+      }
+    } catch(e) { console.error('Error processing', file.name, e); }
+    $('progressFill').style.width = ((idx + 1) / sel.length * 90) + '%';
+    await yieldToMain();
+  }
+  $('progressFill').style.width = '90%';
+  $('progressText').textContent = 'Generating output file...';
+  await yieldToMain();
+  setTimeout(function() {
+    var out = headers ? [headers].concat(allData) : allData;
+    var ws = XLSX.utils.aoa_to_sheet(out);
+    if (headers) ws['!cols'] = headers.map(function(h) { return { wch: Math.min(String(h||'').length + 2, 30) }; });
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Combined_Data');
+    XLSX.writeFile(wb, 'Combined_Data.xlsx');
+    $('progressFill').style.width = '100%';
+    $('progressText').textContent = 'Done! Combined ' + allData.length + ' rows from ' + sel.length + ' files.';
+    setTimeout(function() { $('progressContainer').style.display = 'none'; isImporting = false; updateCombineButton(); }, 2000);
+  }, 50);
+}
+
+function escapeHTML(str) {
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+var dropZone = $('dropZone');
+dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', function() { dropZone.classList.remove('drag-over'); });
+dropZone.addEventListener('drop', function(e) { e.preventDefault(); dropZone.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
+</script>
+</body>
+</html>
