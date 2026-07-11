@@ -137,7 +137,10 @@ select:disabled, input:disabled { background: #f7f7f7; color: #aaa; cursor: not-
 .header-status.status-ok { background: #d1fae5; border: 1px solid #6ee7b7; color: #065f46; }
 .header-status.status-idle { background: #f4f6f8; border: 1px solid #e0e4e8; color: #6b7280; }
 .header-status .status-title { font-weight: 700; margin-bottom: 2px; }
-.header-status #headerStatusDetails { overflow-x: auto; }
+.header-status #headerStatusDetails { overflow-x: auto; word-break: break-word; }
+.mismatch-entry { display: flex; flex-direction: column; padding: 4px 0 4px 8px; border-left: 2px solid #d0d5dd; margin: 4px 0; }
+.mismatch-filename { font-weight: 600; color: #374151; font-size: 11px; word-break: break-all; }
+.mismatch-cols { color: #6b7280; font-size: 11px; margin-top: 2px; word-break: break-word; line-height: 1.5; }
 .guide-card {
     background: #fff; border-radius: 10px;
     padding: 24px 28px 28px; display: none; flex-direction: column;
@@ -206,8 +209,13 @@ select:disabled, input:disabled { background: #f7f7f7; color: #aaa; cursor: not-
     .checklist-box { height: 110px; }
     .guide-card { display: none; }
     .guide-card.guide-visible { display: flex; }
-    .btn-row .btn-secondary, .btn-row .btn-success { flex: 1; }
-    #headerStatusDetails { word-break: break-word; }
+    .btn-row { gap: 8px; }
+    .btn-row .btn-secondary, .btn-row .btn-success { flex: 1; min-width: 0; }
+    #headerStatusDetails { word-break: break-word; overflow-x: hidden; }
+    .header-status { padding: 10px 12px; }
+    .mismatch-entry { margin: 5px 0; padding: 5px 0 5px 10px; }
+    .mismatch-filename { font-size: 12px; }
+    .mismatch-cols { font-size: 11px; }
 }
 </style>
 </head>
@@ -575,14 +583,14 @@ async function checkHeaders() {
     details.textContent = 'All ' + ref.length + ' headers match across ' + allHeaders.length + ' files.';
   } else {
     el.className = 'header-status status-idle';
-    var html = '<div style="font-family:monospace;font-size:11px;line-height:1.5;"><div>Mismatch (base: ' + escapeHTML(allHeaders[0].name) + ')</div>';
-    mismatches.forEach(function(m, idx) {
-      html += '<div style="display:grid;grid-template-columns:auto 1fr;padding-left:8px;min-width:0;">';
-      html += '<div style="white-space:pre;min-width:0;">' + ((idx === mismatches.length - 1) ? '  └─ ' : '  ├─ ') + escapeHTML(m.name) + '  →  </div>';
-      html += '<div style="white-space:pre-wrap;min-width:0;">' + m.cols.map(function(c) { return 'Col ' + c.col + ' (' + escapeHTML(c.exp) + ')'; }).join(', ') + '</div>';
+    var html = '<div style="font-size:11px;line-height:1.5;margin-bottom:6px;">Mismatch (base: <strong>' + escapeHTML(allHeaders[0].name) + '</strong>)</div>';
+    mismatches.forEach(function(m) {
+      var colsText = m.cols.map(function(c) { return 'Col ' + c.col + ' (' + escapeHTML(c.exp) + ')'; }).join(', ');
+      html += '<div class="mismatch-entry">';
+      html += '<span class="mismatch-filename">' + escapeHTML(m.name) + '</span>';
+      html += '<span class="mismatch-cols">→ ' + colsText + '</span>';
       html += '</div>';
     });
-    html += '</div>';
     details.innerHTML = html;
   }
 }
