@@ -1,4 +1,4 @@
-# CSV Data Combiner & Splitter
+# Excel Files Data Combiner & Splitter
 
 A professional, high-performance web application for combining and splitting large tabular datasets.
 
