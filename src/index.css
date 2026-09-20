@@ -56,3 +56,10 @@ body {
 .animate-pulse-bar {
   animation: pulse-bar 1.2s ease-in-out infinite;
 }
+
+/* Hide Vite dev-tools overlay button */
+vite-plugin-checker-error-overlay,
+div[id^="vite-plugin"],
+button[title="Toggle Vite Dev Tools"] {
+  display: none !important;
+}

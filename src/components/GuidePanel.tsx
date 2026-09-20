@@ -3,9 +3,6 @@ import { ArrowRight, CheckCircle2, FileSpreadsheet, Files, Scissors, ShieldCheck
 export default function GuidePanel({ onGoCombine, onGoSplit }: { onGoCombine: () => void; onGoSplit: () => void }) {
   return (
     <div className="animate-fade-slide-in">
-      <h3 className="text-[15px] font-bold text-gray-900">User Guide</h3>
-      <p className="text-[12px] text-gray-500 mt-0.5 mb-4">How to combine and split CSV, TXT and Excel files</p>
-
       {/* combine steps */}
       <div className="rounded-md border border-gray-200 overflow-hidden mb-4">
         <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-200 flex items-center gap-2">
@@ -75,16 +72,6 @@ export default function GuidePanel({ onGoCombine, onGoSplit }: { onGoCombine: ()
           </div>
           <p className="text-[11px] text-gray-500 mt-2">UTF-8 with BOM, configurable delimiter and LF/CRLF line endings.</p>
         </div>
-      </div>
-
-      {/* engine */}
-      <div className="rounded-md border border-gray-200 bg-[#f4f6f8] p-3.5">
-        <p className="text-[12px] font-bold text-gray-800 flex items-center gap-1.5 mb-2"><Zap className="w-4 h-4 text-[#3ea36e]" /> Engine &amp; limits</p>
-        <ul className="text-[12px] text-gray-600 space-y-1.5">
-          <li className="flex gap-1.5"><ShieldCheck className="w-3.5 h-3.5 mt-0.5 shrink-0 text-gray-400" /> No arbitrary caps (no “max 100 MB / 1M rows”). Capacity depends on CPU, RAM, disk and network.</li>
-          <li className="flex gap-1.5"><ShieldCheck className="w-3.5 h-3.5 mt-0.5 shrink-0 text-gray-400" /> Production design: Go HTTP server with streaming I/O, buffered processing, job IDs (queued → processing → completed / failed / cancelled) and SSE progress.</li>
-          <li className="flex gap-1.5"><ShieldCheck className="w-3.5 h-3.5 mt-0.5 shrink-0 text-gray-400" /> Filenames are sanitized, jobs are isolated, temp files auto-expire (JOB_EXPIRATION=1h). Uploads are treated strictly as data.</li>
-        </ul>
       </div>
     </div>
   );

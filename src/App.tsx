@@ -13,14 +13,14 @@ export default function App() {
       <div className="max-w-[660px] mx-auto w-full">
         <div className="bg-white rounded-none sm:rounded-xl overflow-hidden shadow-none sm:shadow-[0_2px_12px_rgba(15,42,74,0.08)] border-0 sm:border sm:border-white min-h-screen sm:min-h-0">
           {/* Header — full-bleed on mobile, compact */}
-          <div className="bg-[#0f2a4a] px-3 sm:px-6 pt-3 sm:pt-5 pb-0">
+          <div className="bg-[#0f2a4a] px-3 sm:px-6 pb-0" style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}>
             <h1 className="text-[18px] sm:text-[22px] font-extrabold text-white tracking-tight leading-tight break-words">
               Excel Files Combiner &amp; Splitter
             </h1>
             <p className="text-[11.5px] sm:text-[12.5px] text-slate-300 mt-0.5 leading-snug max-w-full">
               Merge multiple CSV, TXT or Excel files into one CSV. Split large files into smaller CSVs.
             </p>
-            <div className="flex items-end gap-1 sm:gap-1.5 mt-4 sm:mt-8 sm:pt-1 overflow-x-auto">
+            <div className="flex items-stretch gap-4 sm:gap-7 mt-4 sm:mt-8 sm:pt-1 overflow-x-auto">
               <TabButton active={tab === 'combine'} onClick={() => setTab('combine')}>
                 Combiner Tool
               </TabButton>
@@ -51,10 +51,10 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
   return (
     <button
       onClick={onClick}
-      className={`whitespace-nowrap shrink-0 text-[12px] sm:text-[13px] px-3 sm:px-4 py-1.5 rounded-t-md font-semibold transition-all relative ${
+      className={`whitespace-nowrap shrink-0 text-[12px] sm:text-[13px] px-1 pb-2.5 -mb-px font-semibold transition-all relative border-b-[3px] ${
         active
-          ? 'bg-white text-gray-900 shadow-sm'
-          : 'text-slate-200 hover:text-white hover:bg-white/10'
+          ? 'text-white border-white'
+          : 'text-slate-300 border-transparent hover:text-white hover:border-slate-500'
       }`}
     >
       {children}
