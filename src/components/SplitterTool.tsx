@@ -310,8 +310,8 @@ export default function SplitterTool() {
 
   return (
     <div className="animate-fade-slide-in">
-      <h3 className="text-[15px] font-bold text-gray-900">Import File</h3>
-      <p className="text-[12px] text-gray-500 mt-0.5 mb-3">Upload one CSV, TXT or Excel file — preview is instant, splitting is streamed</p>
+      <h2 className="section-title">Import File</h2>
+      <p className="section-sub mb-4">Upload one CSV, TXT or Excel file — preview is instant, splitting is streamed</p>
 
       {!data ? (
         <div
@@ -319,15 +319,16 @@ export default function SplitterTool() {
           onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
           onDragLeave={(e) => { e.preventDefault(); setDragActive(false); }}
           onClick={() => inputRef.current?.click()}
-          className={`cursor-pointer rounded-lg border-[1.5px] border-dashed transition-all px-4 py-7 text-center ${dragActive ? 'border-[#3ea36e] bg-green-50' : 'border-gray-300 bg-[#fbfcfd] hover:border-gray-400 hover:bg-gray-50'}`}
+          className={`cursor-pointer rounded-lg border border-dashed transition-all px-4 py-8 text-center ${dragActive ? 'border-[#2c6bb3] bg-[#eff6ff]' : 'border-slate-300 bg-slate-50 hover:border-slate-400 hover:bg-slate-100'}`}
         >
           <input ref={inputRef} type="file" accept=".csv,.txt,.xlsx,.xls" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) loadFile(f); e.target.value = ''; }} />
-          <div className="mx-auto w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center mb-2.5">
-            <FileText className="w-5 h-5 text-gray-400" />
+          <div className="mx-auto w-10 h-10 rounded-lg bg-slate-200/70 flex items-center justify-center mb-3">
+            <FileText className="w-5 h-5 text-slate-500" />
           </div>
-          <p className="text-[13px] font-medium text-gray-700">Drag &amp; drop file here</p>
-          <p className="text-[12px] text-gray-500 mt-0.5">or <span className="text-blue-600 font-semibold hover:underline">browse file</span> <span className="text-blue-500 font-mono text-[11px]">(.xlsx, .xls, .csv, .txt)</span></p>
-          <p className="text-[10px] tracking-wide text-gray-400 mt-2 font-semibold">SUPPORTED: CSV • TXT • XLSX • XLS → OUTPUT: CSV ONLY</p>
+          <p className="text-sm font-semibold text-slate-700">Drag &amp; drop file here</p>
+          <p className="text-[13px] text-slate-500 mt-1">or <span className="text-[#2c6bb3] font-semibold">browse file</span></p>
+          <p className="text-xs text-slate-400 font-mono mt-1">.xlsx · .xls · .csv · .txt</p>
+          <p className="text-[11px] tracking-wide text-slate-400 mt-2.5 font-semibold uppercase">Output: CSV only</p>
         </div>
       ) : (
         <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
@@ -343,7 +344,7 @@ export default function SplitterTool() {
             <button onClick={clearAll} className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition" title="Remove"><X className="w-4 h-4" /></button>
           </div>
           {data.ready && data.previewRows.length > 0 && (
-            <div className="border-t border-gray-100 overflow-x-auto">
+            <div className="border-t border-gray-100 x-scroll">
               <table className="w-full text-[11px]">
                 <thead>
                   <tr className="bg-gray-50">
@@ -361,60 +362,60 @@ export default function SplitterTool() {
         </div>
       )}
 
-      <hr className="my-5 border-gray-200" />
+      <hr className="rule" />
 
-      <h3 className="text-[15px] font-bold text-gray-900">Settings</h3>
-      <p className="text-[12px] text-gray-500 mt-0.5 mb-3">Configure how the file is split</p>
+      <h2 className="section-title">Settings</h2>
+      <p className="section-sub">Configure how the file is split</p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="mt-5 grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
         <div>
-          <label className="block text-[12px] font-semibold text-gray-800 mb-1.5">Split Method: <span className="text-red-500">*</span></label>
-          <select value={method} onChange={(e) => setMethod(e.target.value as Method)} className="w-full text-[13px] border border-gray-300 rounded-md px-2.5 py-2 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#3ea36e]/30 focus:border-[#3ea36e]">
+          <label className="field-label">Split Method: <span className="text-red-500">*</span></label>
+          <select value={method} onChange={(e) => setMethod(e.target.value as Method)}>
             <option value="rows">Rows per file</option>
             <option value="count">Number of files</option>
             <option value="size">Maximum file size</option>
           </select>
         </div>
         <div>
-          <label className="block text-[12px] font-semibold text-gray-800 mb-1.5">
+          <label className="field-label">
             {method === 'rows' ? 'Rows per file:' : method === 'count' ? 'Number of files:' : 'Maximum size (MB):'} <span className="text-red-500">*</span>
           </label>
-          {method === 'rows' && <input type="number" min={1} value={rowsPerFile} onChange={(e) => setRowsPerFile(e.target.value)} className="w-full text-[13px] border border-gray-300 rounded-md px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-[#3ea36e]/30 focus:border-[#3ea36e]" />}
-          {method === 'count' && <input type="number" min={2} max={999} value={fileCount} onChange={(e) => setFileCount(e.target.value)} className="w-full text-[13px] border border-gray-300 rounded-md px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-[#3ea36e]/30 focus:border-[#3ea36e]" />}
-          {method === 'size' && <input type="number" min={1} value={maxSizeMB} onChange={(e) => setMaxSizeMB(e.target.value)} className="w-full text-[13px] border border-gray-300 rounded-md px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-[#3ea36e]/30 focus:border-[#3ea36e]" />}
+          {method === 'rows' && <input type="number" min={1} value={rowsPerFile} onChange={(e) => setRowsPerFile(e.target.value)} />}
+          {method === 'count' && <input type="number" min={2} max={999} value={fileCount} onChange={(e) => setFileCount(e.target.value)} />}
+          {method === 'size' && <input type="number" min={1} value={maxSizeMB} onChange={(e) => setMaxSizeMB(e.target.value)} />}
         </div>
       </div>
 
       {data && data.ready && (data.ext === '.xlsx' || data.ext === '.xls') && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+        <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2 mt-4">
           <div>
-            <label className="block text-[12px] font-semibold text-gray-800 mb-1.5">Select Sheet: <span className="text-red-500">*</span></label>
-            <select value={data.selectedSheet} onChange={(e) => changeSheet(e.target.value)} className="w-full text-[13px] border border-gray-300 rounded-md px-2.5 py-2 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#3ea36e]/30 focus:border-[#3ea36e]">
+            <label className="field-label">Select Sheet: <span className="text-red-500">*</span></label>
+            <select value={data.selectedSheet} onChange={(e) => changeSheet(e.target.value)}>
               {data.sheets.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
           <div className="flex items-end pb-2">
-            <label className="flex items-center gap-2 text-[12px] text-gray-600 cursor-pointer hover:text-gray-900">
-              <input type="checkbox" checked={processAllSheets} onChange={() => setProcessAllSheets(!processAllSheets)} className="w-3.5 h-3.5 rounded border-gray-300 accent-[#3ea36e]" />
-              Process all sheets <span className="text-gray-400">(one CSV set per sheet)</span>
+            <label className="flex items-center gap-2 text-[13px] text-slate-600 cursor-pointer hover:text-slate-900">
+              <input type="checkbox" checked={processAllSheets} onChange={() => setProcessAllSheets(!processAllSheets)} />
+              Process all sheets <span className="text-slate-400">(one CSV set per sheet)</span>
             </label>
           </div>
         </div>
       )}
 
-      <label className="flex items-center gap-2 text-[13px] text-gray-700 mt-3 cursor-pointer hover:text-gray-900 font-medium">
-        <input type="checkbox" checked={includeHeader} onChange={() => setIncludeHeader(!includeHeader)} className="w-4 h-4 rounded border-gray-300 accent-[#3ea36e]" />
+      <label className="flex items-center gap-2 text-[13px] text-slate-700 mt-4 cursor-pointer hover:text-slate-900 font-medium">
+        <input type="checkbox" checked={includeHeader} onChange={() => setIncludeHeader(!includeHeader)} />
         Include header in every output file
       </label>
 
-      <div className="mt-4 rounded-md border border-gray-200 bg-[#f4f6f8] px-3.5 py-3">
-        <p className="text-[12px] font-bold text-gray-700">Output Preview</p>
-        {!data && <p className="text-[12px] text-gray-500 mt-0.5">Import a file to preview split output.</p>}
-        {data && !data.ready && <p className="text-[12px] text-gray-500 mt-0.5">Inspecting file…</p>}
+      <h2 className="section-label mt-6">Output Preview</h2>
+      <div className="mt-3 panel">
+        {!data && <p className="text-[13px] text-slate-500">Import a file to preview split output.</p>}
+        {data && !data.ready && <p className="text-[13px] text-slate-500">Inspecting file…</p>}
         {data && data.ready && (
-          <p className="text-[12px] text-gray-500 mt-0.5">
-            Will generate <span className="font-bold text-gray-800">~{estimatedParts} CSV file{estimatedParts === 1 ? '' : 's'}</span> from <span className="font-semibold">{formatNumber(data.estimatedRows)} rows est.</span>
-            {data.selectedSheet && <span> (sheet <span className="font-semibold text-gray-700">{data.selectedSheet}</span>)</span>} • naming: <span className="font-mono text-[11px]">name_part_001.csv</span>
+          <p className="text-[13px] text-slate-600 leading-6">
+            Will generate <span className="font-semibold text-slate-900">~{estimatedParts} CSV file{estimatedParts === 1 ? '' : 's'}</span> from <span className="font-semibold">{formatNumber(data.estimatedRows)} rows est.</span>
+            {data.selectedSheet && <span> (sheet <span className="font-semibold text-slate-700">{data.selectedSheet}</span>)</span>} • naming: <span className="font-mono text-xs">name_part_001.csv</span>
           </p>
         )}
       </div>
@@ -464,11 +465,11 @@ export default function SplitterTool() {
           <div className="h-2.5 rounded-full bg-gray-100 overflow-hidden">
             <div className="h-full bg-[#3ea36e] rounded-full transition-[width] duration-150" style={{ width: `${prog.percent}%` }} />
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 text-center">
-            <div className="rounded-md bg-gray-50 px-2 py-1.5"><p className="text-[10px] font-bold text-gray-400 uppercase">Speed</p><p className="text-[12px] font-bold text-gray-800 tabular-nums">{formatBytes(prog.speed)}/s</p></div>
-            <div className="rounded-md bg-gray-50 px-2 py-1.5"><p className="text-[10px] font-bold text-gray-400 uppercase">Done</p><p className="text-[12px] font-bold text-gray-800 tabular-nums">{formatBytes(prog.bytesDone)} / {formatBytes(prog.totalBytes || data?.size || 0)}</p></div>
-            <div className="rounded-md bg-gray-50 px-2 py-1.5"><p className="text-[10px] font-bold text-gray-400 uppercase">Elapsed</p><p className="text-[12px] font-bold text-gray-800 tabular-nums">{formatDuration(prog.elapsed)}</p></div>
-            <div className="rounded-md bg-gray-50 px-2 py-1.5"><p className="text-[10px] font-bold text-gray-400 uppercase">ETA</p><p className="text-[12px] font-bold text-gray-800 tabular-nums">{prog.etaMs ? formatDuration(prog.etaMs) : '—'}</p></div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3.5 text-center">
+            <div className="rounded-lg bg-gray-50 px-2 py-2"><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Speed</p><p className="text-[13px] sm:text-[12px] font-bold text-gray-800 tabular-nums mt-0.5">{formatBytes(prog.speed)}/s</p></div>
+            <div className="rounded-lg bg-gray-50 px-2 py-2"><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Done</p><p className="text-[13px] sm:text-[12px] font-bold text-gray-800 tabular-nums mt-0.5">{formatBytes(prog.bytesDone)}</p></div>
+            <div className="rounded-lg bg-gray-50 px-2 py-2"><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Elapsed</p><p className="text-[13px] sm:text-[12px] font-bold text-gray-800 tabular-nums mt-0.5">{formatDuration(prog.elapsed)}</p></div>
+            <div className="rounded-lg bg-gray-50 px-2 py-2"><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">ETA</p><p className="text-[13px] sm:text-[12px] font-bold text-gray-800 tabular-nums mt-0.5">{prog.etaMs ? formatDuration(prog.etaMs) : '—'}</p></div>
           </div>
           {prog.current && <p className="text-[11px] text-gray-500 mt-2 truncate">Writing: <span className="font-semibold text-gray-700">{prog.current}</span></p>}
         </div>
@@ -483,9 +484,9 @@ export default function SplitterTool() {
             )}
           </div>
           {stats && <p className="text-[12px] text-gray-600 mb-3">{formatNumber(stats.rows)} rows split in {formatDuration(stats.ms)} • each part keeps the header</p>}
-          <div className="grid sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-0.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 sm:max-h-64 overflow-y-auto pr-0.5">
             {parts.map((p) => (
-              <a key={p.url} href={p.url} download={p.name} className="flex items-center gap-2.5 px-3 py-2.5 rounded-md bg-white border border-green-100 hover:border-[#3ea36e] hover:shadow-sm transition group">
+              <a key={p.url} href={p.url} download={p.name} className="flex items-center gap-2.5 px-3 py-3 sm:py-2.5 rounded-lg bg-white border border-green-100 hover:border-[#3ea36e] hover:shadow-sm active:bg-green-50 transition group">
                 <Scissors className="w-4 h-4 text-[#3ea36e] shrink-0" />
                 <span className="flex-1 min-w-0">
                   <span className="block text-[12px] font-bold text-gray-800 truncate group-hover:text-[#3ea36e]">{p.name}</span>
@@ -498,9 +499,9 @@ export default function SplitterTool() {
         </div>
       )}
 
-      <div className="flex justify-end gap-2.5 mt-4">
-        <button onClick={clearAll} className="px-5 py-2 rounded-md border border-gray-300 bg-white text-gray-600 text-[13px] font-semibold hover:bg-gray-50 hover:text-gray-900 transition">Clear All</button>
-        <button onClick={handleSplit} disabled={!data || !data.ready || processing} className={`px-6 py-2 rounded-md text-white text-[13px] font-bold shadow-sm transition disabled:opacity-40 disabled:cursor-not-allowed ${GREEN}`}>
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5 mt-6">
+        <button onClick={clearAll} className="w-full sm:w-auto px-5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50 active:bg-slate-100 transition">Clear All</button>
+        <button onClick={handleSplit} disabled={!data || !data.ready || processing} className={`w-full sm:w-auto px-6 py-2.5 rounded-md text-white text-sm font-semibold shadow-sm transition disabled:opacity-40 disabled:cursor-not-allowed ${GREEN}`}>
           {processing ? `${prog.percent}% Splitting…` : 'Split File'}
         </button>
       </div>
@@ -510,7 +511,7 @@ export default function SplitterTool() {
           <div className="px-3 py-2 bg-gray-50 border-b border-gray-200 flex items-center gap-1.5 text-[11px] font-bold text-gray-500 uppercase tracking-wide">
             <Table2 className="w-3.5 h-3.5" /> Full preview — first rows
           </div>
-          <div className="overflow-x-auto max-h-48 overflow-y-auto">
+          <div className="x-scroll max-h-48 overflow-y-auto">
             <table className="w-full text-[11px]">
               <thead className="sticky top-0">
                 <tr className="bg-white">

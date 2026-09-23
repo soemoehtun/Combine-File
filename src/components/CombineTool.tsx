@@ -373,23 +373,24 @@ export default function CombineTool() {
 
   return (
     <div className="animate-fade-slide-in">
-      <h3 className="text-[15px] font-bold text-gray-900">Import Files</h3>
-      <p className="text-[12px] text-gray-500 mt-0.5 mb-3">Drag and drop multiple CSV, TXT or Excel files — inspected instantly, combined by streaming</p>
+      <h2 className="section-title">Import Files</h2>
+      <p className="section-sub mb-4">Drag and drop multiple CSV, TXT or Excel files — inspected instantly, combined by streaming</p>
 
       <div
         onDrop={(e) => { e.preventDefault(); setDragActive(false); if (e.dataTransfer.files?.length) addFiles(e.dataTransfer.files); }}
         onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
         onDragLeave={(e) => { e.preventDefault(); setDragActive(false); }}
         onClick={() => inputRef.current?.click()}
-        className={`cursor-pointer rounded-lg border-[1.5px] border-dashed transition-all px-4 py-7 text-center ${dragActive ? 'border-[#3ea36e] bg-green-50 scale-[1.005]' : 'border-gray-300 bg-[#fbfcfd] hover:border-gray-400 hover:bg-gray-50'}`}
+        className={`cursor-pointer rounded-lg border border-dashed transition-all px-4 py-8 text-center ${dragActive ? 'border-[#2c6bb3] bg-[#eff6ff]' : 'border-slate-300 bg-slate-50 hover:border-slate-400 hover:bg-slate-100'}`}
       >
         <input ref={inputRef} type="file" multiple accept=".csv,.txt,.xlsx,.xls" className="hidden" onChange={(e) => { if (e.target.files?.length) addFiles(e.target.files); e.target.value = ''; }} />
-        <div className="mx-auto w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center mb-2.5">
-          <FileText className="w-5 h-5 text-gray-400" />
+        <div className="mx-auto w-10 h-10 rounded-lg bg-slate-200/70 flex items-center justify-center mb-3">
+          <FileText className="w-5 h-5 text-slate-500" />
         </div>
-        <p className="text-[13px] font-medium text-gray-700">Drag &amp; drop files here</p>
-        <p className="text-[12px] text-gray-500 mt-0.5">or <span className="text-blue-600 font-semibold hover:underline">browse files</span> <span className="text-blue-500 font-mono text-[11px]">(.xlsx, .xls, .csv, .txt)</span></p>
-        <p className="text-[10px] tracking-wide text-gray-400 mt-2 font-semibold">SUPPORTED: CSV • TXT • XLSX • XLS → OUTPUT: CSV ONLY</p>
+        <p className="text-sm font-semibold text-slate-700">Drag &amp; drop files here</p>
+        <p className="text-[13px] text-slate-500 mt-1">or <span className="text-[#2c6bb3] font-semibold">browse files</span></p>
+        <p className="text-xs text-slate-400 font-mono mt-1">.xlsx · .xls · .csv · .txt</p>
+        <p className="text-[11px] tracking-wide text-slate-400 mt-2.5 font-semibold uppercase">Output: CSV only</p>
       </div>
 
       {files.length > 0 && (
@@ -427,37 +428,35 @@ export default function CombineTool() {
         </div>
       )}
 
-      <hr className="my-5 border-gray-200" />
+      <hr className="rule" />
 
-      <h3 className="text-[15px] font-bold text-gray-900">Settings</h3>
-      <p className="text-[12px] text-gray-500 mt-0.5 mb-3">Configure how files are combined</p>
+      <h2 className="section-title">Settings</h2>
+      <p className="section-sub">Configure how files are combined</p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="mt-5 grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
         <div>
-          <label className="block text-[12px] font-semibold text-gray-800 mb-1.5">Start Row: <span className="text-red-500">*</span></label>
-          <select value={startRow} onChange={(e) => setStartRow(e.target.value)} className="w-full text-[13px] border border-gray-300 rounded-md px-2.5 py-2 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#3ea36e]/30 focus:border-[#3ea36e]">
+          <label className="field-label">Start Row: <span className="text-red-500">*</span></label>
+          <select value={startRow} onChange={(e) => setStartRow(e.target.value)}>
             <option value="1">Row 1 (Include Heading)</option>
             <option value="2">Row 2 (Skip Heading)</option>
             <option value="custom">Custom Row…</option>
           </select>
           {startRow === 'custom' && (
-            <input type="number" min={1} value={customRow} onChange={(e) => setCustomRow(e.target.value)} className="mt-2 w-full text-[13px] border border-gray-300 rounded-md px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-[#3ea36e]/30 focus:border-[#3ea36e]" placeholder="e.g. 5" />
+            <input type="number" min={1} value={customRow} onChange={(e) => setCustomRow(e.target.value)} className="mt-2" placeholder="e.g. 5" />
           )}
         </div>
         <div>
-          <label className="block text-[12px] font-semibold text-gray-800 mb-1.5">Select Sheet: <span className="text-red-500">*</span></label>
-          <select value={globalSheet} onChange={(e) => applyGlobalSheet(e.target.value)} disabled={!allSheets.length} className="w-full text-[13px] border border-gray-300 rounded-md px-2.5 py-2 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#3ea36e]/30 focus:border-[#3ea36e] disabled:bg-gray-50 disabled:text-gray-400">
+          <label className="field-label">Select Sheet: <span className="text-red-500">*</span></label>
+          <select value={globalSheet} onChange={(e) => applyGlobalSheet(e.target.value)} disabled={!allSheets.length}>
             <option value="">{allSheets.length ? 'Same sheet for all files…' : 'Import files first…'}</option>
             {allSheets.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
-          {globalSheet && <p className="text-[11px] text-gray-500 mt-1">Applies <span className="font-semibold text-gray-700">{globalSheet}</span> to every workbook that contains it.</p>}
+          {globalSheet && <p className="text-xs text-slate-500 mt-1.5">Applies <span className="font-semibold text-slate-700">{globalSheet}</span> to every workbook that contains it.</p>}
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
         <div>
-          <label className="block text-[12px] font-semibold text-gray-800 mb-1.5">TXT / CSV Delimiter</label>
-          <select value={txtDelimiter} onChange={(e) => setTxtDelimiter(e.target.value)} className="w-full text-[13px] border border-gray-300 rounded-md px-2.5 py-2 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#3ea36e]/30 focus:border-[#3ea36e]">
+          <label className="field-label">TXT / CSV Delimiter</label>
+          <select value={txtDelimiter} onChange={(e) => setTxtDelimiter(e.target.value)}>
             <option value="auto">Auto-detect</option>
             <option value=",">Comma (,)</option>
             <option value=";">Semicolon (;)</option>
@@ -466,8 +465,8 @@ export default function CombineTool() {
           </select>
         </div>
         <div>
-          <label className="block text-[12px] font-semibold text-gray-800 mb-1.5">Header Mode</label>
-          <select value={headerMode} onChange={(e) => setHeaderMode(e.target.value as HeaderMode)} className="w-full text-[13px] border border-gray-300 rounded-md px-2.5 py-2 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#3ea36e]/30 focus:border-[#3ea36e]">
+          <label className="field-label">Header Mode</label>
+          <select value={headerMode} onChange={(e) => setHeaderMode(e.target.value as HeaderMode)}>
             <option value="validate">Validate all headers</option>
             <option value="first">Use first file header</option>
             <option value="byName">Match columns by name</option>
@@ -476,25 +475,25 @@ export default function CombineTool() {
         </div>
       </div>
 
-      <div className="mt-4 rounded-md border border-gray-200 bg-[#f4f6f8] px-3.5 py-3">
-        <p className="text-[12px] font-bold text-gray-700">Header Check</p>
-        {!files.length && <p className="text-[12px] text-gray-500 mt-0.5">Import files to check column headers.</p>}
+      <h2 className="section-label mt-6">Header Check</h2>
+      <div className="mt-3 panel">
+        {!files.length && <p className="text-[13px] text-slate-500">Import files to check column headers.</p>}
         {files.length > 0 && headerCheck && (
-          <div className="mt-2 overflow-hidden rounded-md border border-gray-200 bg-white">
+          <div className="overflow-hidden rounded-md border border-slate-200 bg-white">
             <table className="w-full text-[12px]">
               <thead>
-                <tr className="bg-gray-50 text-gray-500 text-left">
-                  <th className="px-3 py-1.5 font-semibold">File</th>
-                  <th className="px-3 py-1.5 font-semibold text-center w-16">Cols</th>
-                  <th className="px-3 py-1.5 font-semibold text-center w-24">Status</th>
+                <tr className="bg-slate-50 text-slate-500 text-left">
+                  <th className="px-3 py-2 font-semibold">File</th>
+                  <th className="px-3 py-2 font-semibold text-center w-16">Cols</th>
+                  <th className="px-3 py-2 font-semibold text-center w-24">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-slate-100">
                 {headerCheck.map((h) => (
                   <tr key={h.id}>
-                    <td className="px-3 py-1.5 text-gray-700 truncate max-w-[220px]" title={h.headers.join(', ')}>{h.name}</td>
-                    <td className="px-3 py-1.5 text-center text-gray-600 tabular-nums">{h.ready ? h.cols : '…'}</td>
-                    <td className="px-3 py-1.5 text-center">
+                    <td className="px-3 py-2 text-slate-700 truncate max-w-[220px]" title={h.headers.join(', ')}>{h.name}</td>
+                    <td className="px-3 py-2 text-center text-slate-600 tabular-nums">{h.ready ? h.cols : '…'}</td>
+                    <td className="px-3 py-2 text-center">
                       {!h.ready ? <span className="text-[11px] text-gray-400">…</span> : h.match
                         ? <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600"><Check className="w-3.5 h-3.5" /> Match</span>
                         : <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600"><AlertTriangle className="w-3.5 h-3.5" /> Different</span>}
@@ -504,7 +503,7 @@ export default function CombineTool() {
               </tbody>
             </table>
             {hasMismatch && (
-              <div className="px-3 py-2 bg-amber-50 border-t border-amber-100 text-[11px] text-amber-700 flex items-start gap-1.5">
+              <div className="px-3 py-2 bg-amber-50 border-t border-amber-200 text-[12px] text-amber-700 flex items-start gap-1.5">
                 <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                 <span>Column mismatch detected. Use “Match columns by name” to align by header names (missing → empty), or “Match by position”.</span>
               </div>
@@ -573,11 +572,11 @@ export default function CombineTool() {
           <div className="h-2.5 rounded-full bg-gray-100 overflow-hidden">
             <div className="h-full bg-[#3ea36e] rounded-full transition-[width] duration-150" style={{ width: `${prog.percent}%` }} />
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 text-center">
-            <div className="rounded-md bg-gray-50 px-2 py-1.5"><p className="text-[10px] font-bold text-gray-400 uppercase">Speed</p><p className="text-[12px] font-bold text-gray-800 tabular-nums">{formatBytes(prog.speed)}/s</p></div>
-            <div className="rounded-md bg-gray-50 px-2 py-1.5"><p className="text-[10px] font-bold text-gray-400 uppercase">Done</p><p className="text-[12px] font-bold text-gray-800 tabular-nums">{formatBytes(prog.bytesDone)} / {formatBytes(prog.totalBytes)}</p></div>
-            <div className="rounded-md bg-gray-50 px-2 py-1.5"><p className="text-[10px] font-bold text-gray-400 uppercase">Elapsed</p><p className="text-[12px] font-bold text-gray-800 tabular-nums">{formatDuration(prog.elapsed)}</p></div>
-            <div className="rounded-md bg-gray-50 px-2 py-1.5"><p className="text-[10px] font-bold text-gray-400 uppercase">ETA</p><p className="text-[12px] font-bold text-gray-800 tabular-nums">{prog.etaMs ? formatDuration(prog.etaMs) : '—'}</p></div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3.5 text-center">
+            <div className="rounded-lg bg-gray-50 px-2 py-2"><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Speed</p><p className="text-[13px] sm:text-[12px] font-bold text-gray-800 tabular-nums mt-0.5">{formatBytes(prog.speed)}/s</p></div>
+            <div className="rounded-lg bg-gray-50 px-2 py-2"><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Done</p><p className="text-[13px] sm:text-[12px] font-bold text-gray-800 tabular-nums mt-0.5">{formatBytes(prog.bytesDone)}</p></div>
+            <div className="rounded-lg bg-gray-50 px-2 py-2"><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Elapsed</p><p className="text-[13px] sm:text-[12px] font-bold text-gray-800 tabular-nums mt-0.5">{formatDuration(prog.elapsed)}</p></div>
+            <div className="rounded-lg bg-gray-50 px-2 py-2"><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">ETA</p><p className="text-[13px] sm:text-[12px] font-bold text-gray-800 tabular-nums mt-0.5">{prog.etaMs ? formatDuration(prog.etaMs) : '—'}</p></div>
           </div>
           {prog.currentFile && <p className="text-[11px] text-gray-500 mt-2 truncate">Working on: <span className="font-semibold text-gray-700">{prog.currentFile}</span></p>}
         </div>
@@ -601,9 +600,9 @@ export default function CombineTool() {
         </div>
       )}
 
-      <div className="flex justify-end gap-2.5 mt-4">
-        <button onClick={clearAll} className="px-5 py-2 rounded-md border border-gray-300 bg-white text-gray-600 text-[13px] font-semibold hover:bg-gray-50 hover:text-gray-900 transition">Clear All</button>
-        <button onClick={handleCombine} disabled={!files.length || processing || !allReady} className={`px-6 py-2 rounded-md text-white text-[13px] font-bold shadow-sm transition disabled:opacity-40 disabled:cursor-not-allowed ${GREEN}`}>
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5 mt-6">
+        <button onClick={clearAll} className="w-full sm:w-auto px-5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50 active:bg-slate-100 transition">Clear All</button>
+        <button onClick={handleCombine} disabled={!files.length || processing || !allReady} className={`w-full sm:w-auto px-6 py-2.5 rounded-md text-white text-sm font-semibold shadow-sm transition disabled:opacity-40 disabled:cursor-not-allowed ${GREEN}`}>
           {processing ? `${prog.percent}% Combining…` : 'Combine Files'}
         </button>
       </div>
@@ -613,7 +612,7 @@ export default function CombineTool() {
           <div className="px-3 py-2 bg-gray-50 border-b border-gray-200 flex items-center gap-1.5 text-[11px] font-bold text-gray-500 uppercase tracking-wide">
             <Table2 className="w-3.5 h-3.5" /> Preview — {files[0].name}
           </div>
-          <div className="overflow-x-auto">
+          <div className="x-scroll">
             <table className="w-full text-[11px]">
               <thead>
                 <tr className="bg-white">

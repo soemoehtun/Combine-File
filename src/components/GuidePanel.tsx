@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle2, FileSpreadsheet, Files, Scissors, ShieldCheck, Zap } from 'lucide-react';
+import { ArrowRight, CheckCircle2, FileSpreadsheet, Files, Scissors } from 'lucide-react';
 
 export default function GuidePanel({ onGoCombine, onGoSplit }: { onGoCombine: () => void; onGoSplit: () => void }) {
   return (
@@ -14,7 +14,7 @@ export default function GuidePanel({ onGoCombine, onGoSplit }: { onGoCombine: ()
             ['1', 'Import files', 'Drag & drop multiple .csv, .txt, .xlsx or .xls files. Use the order shown — the combined CSV follows it.'],
             ['2', 'Choose Start Row', 'Row 1 includes the heading. Row 2 skips it. Use Custom (e.g. 5) when reports have title rows on top.'],
             ['3', 'Select Sheet', 'Pick one sheet name to apply to every workbook (e.g. GSM), or pick per-file sheets in the file list. Only the selected sheet is read.'],
-            ['4', 'Check headers', 'Green Match = identical columns. Amber Different = counts or names differ. Switch to “Match columns by name” to auto-align.'],
+            ['4', 'Check headers', 'Green Match = identical columns. Amber Different = counts or names differ. Switch to "Match columns by name" to auto-align.'],
             ['5', 'Combine & download', 'Click Combine Files, watch real progress, then Download combined.csv.'],
           ].map(([n, t, d]) => (
             <li key={n} className="flex gap-3 px-4 py-2.5">
@@ -38,8 +38,8 @@ export default function GuidePanel({ onGoCombine, onGoSplit }: { onGoCombine: ()
           {[
             ['1', 'Import one file', 'Upload a CSV, TXT, XLSX or XLS file. A preview of the first rows appears instantly.'],
             ['2', 'Pick a method', 'Rows per file (e.g. 1,000,000), Number of files (e.g. 10), or Maximum size (e.g. 500 MB).'],
-            ['3', 'Keep the header', 'Leave “Include header in every output file” on so every part_001.csv, part_002.csv… starts with the same header row.'],
-            ['4', 'Excel sheets', 'Choose a single sheet, or tick “Process all sheets” to get filename_GSM.csv, filename_LTE.csv… separately.'],
+            ['3', 'Keep the header', 'Leave "Include header in every output file" on so every part_001.csv, part_002.csv… starts with the same header row.'],
+            ['4', 'Excel sheets', 'Choose a single sheet, or tick "Process all sheets" to get filename_GSM.csv, filename_LTE.csv… separately.'],
             ['5', 'Split & download', 'Click Split File, then download parts individually or use Download all.'],
           ].map(([n, t, d]) => (
             <li key={n} className="flex gap-3 px-4 py-2.5">
@@ -54,7 +54,7 @@ export default function GuidePanel({ onGoCombine, onGoSplit }: { onGoCombine: ()
       </div>
 
       {/* formats */}
-      <div className="grid sm:grid-cols-2 gap-3 mb-4">
+      <div className="grid sm:grid-cols-2 gap-3">
         <div className="rounded-md border border-gray-200 p-3.5">
           <p className="text-[12px] font-bold text-gray-800 flex items-center gap-1.5 mb-2"><FileSpreadsheet className="w-4 h-4 text-[#3ea36e]" /> Supported input</p>
           <div className="flex gap-1.5 flex-wrap">

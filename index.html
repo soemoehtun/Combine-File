@@ -3,16 +3,42 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <!-- Browser / PWA chrome color (Android + Chrome) -->
+
+    <!-- Browser theme colors (Safari 15+, Chrome Android, etc.) -->
     <meta name="theme-color" content="#0f2a4a" />
-    <!-- iPhone status bar: black-translucent lets your navy show through -->
+    <meta name="theme-color" content="#0f2a4a" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f2a4a" media="(prefers-color-scheme: dark)" />
+
+    <!-- iOS Safari & WebKit status bar style -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Excel Files Combiner & Splitter" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
     <title>Excel Files Combiner & Splitter — Merge & Split CSV, TXT, Excel to CSV</title>
     <meta name="description" content="Merge multiple CSV, TXT or Excel files into one CSV. Split large files into smaller CSVs." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <style>
+      /* Base background on mobile must be navy so Safari/WebKit tints the status bar navy */
+      html {
+        background-color: #0f2a4a;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background-color: #0f2a4a;
+        margin: 0;
+        padding: 0;
+      }
+      @media (min-width: 640px) {
+        html, body {
+          background-color: #e8eaf0;
+        }
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
