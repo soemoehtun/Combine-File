@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, Check, ChevronDown, FileSpreadsheet, FileText, Loader2, Table2, X } from 'lucide-react';
+import { AlertTriangle, Check, FileSpreadsheet } from 'lucide-react';
+import { Dropzone, FileRow } from './FileImport';
 import { formatBytes, formatDuration, formatNumber, getExtension, isAllowedExtension } from '../lib/csv';
 import { previewTextFile, previewExcelFile, streamTextFile, loadExcelSheetFull, rowsToCsv, yieldToUI, isTextExt, ProgressTracker, createYielder } from '../lib/engine';
 
@@ -26,24 +27,22 @@ const GREEN = 'bg-[#3ea36e] hover:bg-[#35925f]';
 
 export default function CombineTool() {
   const [files, setFiles] = useState<LoadedFile[]>([]);
-  const [dragActive, setDragActive] = useState(false);
   const [startRow, setStartRow] = useState('1');
   const [customRow, setCustomRow] = useState('5');
   const [globalSheet, setGlobalSheet] = useState('');
   const [headerMode, setHeaderMode] = useState<HeaderMode>('validate');
   const [txtDelimiter, setTxtDelimiter] = useState('auto');
-  const [outDelimiter, setOutDelimiter] = useState(',');
-  const [lineEnding, setLineEnding] = useState<'LF' | 'CRLF'>('LF');
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [trimWs, setTrimWs] = useState(false);
-  const [removeBlanks, setRemoveBlanks] = useState(false);
-  const [dedupe, setDedupe] = useState(false);
+  // fixed defaults (advanced options removed): comma CSV, LF, no cleaning
+  const outDelimiter = ',';
+  const lineEnding = 'LF' as 'LF' | 'CRLF';
+  const trimWs = false as boolean;
+  const removeBlanks = false as boolean;
+  const dedupe = false as boolean;
 
   const [processing, setProcessing] = useState(false);
   const [prog, setProg] = useState({ percent: 0, rows: 0, bytesDone: 0, totalBytes: 0, filesDone: 0, speed: 0, etaMs: 0, elapsed: 0, currentFile: '' });
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ url: string; name: string; rows: number; inputBytes: number; outputBytes: number; ms: number; files: number } | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
   const cancelRef = useRef(false);
 
   const startNum = startRow === '1' ? 1 : startRow === '2' ? 2 : Math.max(1, parseInt(customRow) || 1);
@@ -116,7 +115,8 @@ export default function CombineTool() {
         setFiles((p) => p.map((f) => f.id === id ? { ...f, ready: true, selectedSheet: sheet, headers: pv.headers, previewRows: pv.previewRows, estimatedRows: pv.estimatedRows, sheets: pv.sheets.length ? pv.sheets : f.sheets } : f));
       } else {
         const full = await loadExcelSheetFull(target.file, sheet);
-        setFiles((p) => p.map((f) => f.id === id ? { ...f, ready: true, selectedSheet: sheet, headers: full.headers.map((h) => String(h).trim()), previewRows: [full.headers, ...full.rows.slice(0, 5)], estimatedRows: full.totalRows } : f));
+        // full.rows[0] IS the header — keep its natural index so headerIdx stays correct
+        setFiles((p) => p.map((f) => f.id === id ? { ...f, ready: true, selectedSheet: sheet, headers: full.headers.map((h) => String(h).trim()), previewRows: full.rows.slice(0, 6), estimatedRows: full.totalRows } : f));
       }
     } catch {
       setFiles((p) => p.map((f) => f.id === id ? { ...f, ready: true, selectedSheet: sheet } : f));
@@ -374,57 +374,60 @@ export default function CombineTool() {
   return (
     <div className="animate-fade-slide-in">
       <h2 className="section-title">Import Files</h2>
-      <p className="section-sub mb-4">Drag and drop multiple CSV, TXT or Excel files — inspected instantly, combined by streaming</p>
+      <p className="section-sub mb-3">Drag and drop multiple CSV, TXT or Excel files</p>
 
-      <div
-        onDrop={(e) => { e.preventDefault(); setDragActive(false); if (e.dataTransfer.files?.length) addFiles(e.dataTransfer.files); }}
-        onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
-        onDragLeave={(e) => { e.preventDefault(); setDragActive(false); }}
-        onClick={() => inputRef.current?.click()}
-        className={`cursor-pointer rounded-lg border border-dashed transition-all px-4 py-8 text-center ${dragActive ? 'border-[#2c6bb3] bg-[#eff6ff]' : 'border-slate-300 bg-slate-50 hover:border-slate-400 hover:bg-slate-100'}`}
-      >
-        <input ref={inputRef} type="file" multiple accept=".csv,.txt,.xlsx,.xls" className="hidden" onChange={(e) => { if (e.target.files?.length) addFiles(e.target.files); e.target.value = ''; }} />
-        <div className="mx-auto w-10 h-10 rounded-lg bg-slate-200/70 flex items-center justify-center mb-3">
-          <FileText className="w-5 h-5 text-slate-500" />
-        </div>
-        <p className="text-sm font-semibold text-slate-700">Drag &amp; drop files here</p>
-        <p className="text-[13px] text-slate-500 mt-1">or <span className="text-[#2c6bb3] font-semibold">browse files</span></p>
-        <p className="text-xs text-slate-400 font-mono mt-1">.xlsx · .xls · .csv · .txt</p>
-        <p className="text-[11px] tracking-wide text-slate-400 mt-2.5 font-semibold uppercase">Output: CSV only</p>
-      </div>
+      <Dropzone
+        multiple
+        label="Drag &amp; drop your data files here"
+        hint="browse files (.csv, .txt, .xlsx, .xls)"
+        onFiles={(fl) => addFiles(fl)}
+      />
 
       {files.length > 0 && (
-        <div className="mt-3 rounded-lg border border-gray-200 divide-y divide-gray-100 overflow-hidden">
-          <div className="px-3 py-2 bg-gray-50 text-[11px] text-gray-500 font-semibold flex justify-between">
-            <span>{files.length} file{files.length > 1 ? 's' : ''} • {formatBytes(totalBytesSel)} • ~{formatNumber(totalEstRows)} rows est.</span>
-            {!allReady && <span className="text-amber-600 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> inspecting…</span>}
-          </div>
+        <div className="mt-2 space-y-1.5">
           {files.map((f, i) => (
-            <div key={f.id} className="flex items-center gap-2.5 px-3 py-2.5 bg-white hover:bg-gray-50 transition">
-              <span className="text-[11px] font-bold text-gray-400 w-5 text-center tabular-nums">{String(i + 1).padStart(2, '0')}</span>
-              <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wide ${f.ext === '.csv' ? 'bg-emerald-100 text-emerald-700' : f.ext === '.txt' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
-                {f.ext.replace('.', '')}
-              </span>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-[13px] font-semibold text-gray-800 truncate">{f.name}</span>
-                  <span className="text-[11px] text-gray-400 shrink-0">{formatBytes(f.size)}</span>
-                  {!f.ready && <Loader2 className="w-3.5 h-3.5 text-gray-400 animate-spin" />}
-                </div>
-                <div className="text-[11px] text-gray-500 truncate mt-0.5">
-                  {f.error ? <span className="text-red-500">{f.error}</span> : !f.ready ? <span className="text-gray-400">Reading header…</span> : <>{formatNumber(f.estimatedRows)} rows est. • {(f.previewRows[headerIdx] || f.headers).length} cols{f.delimiterLabel && f.delimiterLabel !== '—' ? ` • ${f.delimiterLabel}` : ''}{f.selectedSheet ? ` • ${f.selectedSheet}` : ''}</>}
-                </div>
-                {(f.ext === '.xlsx' || f.ext === '.xls') && f.sheets.length > 1 && (
-                  <select value={f.selectedSheet} onChange={(e) => changeFileSheet(f.id, e.target.value)} className="mt-1 text-[11px] border border-gray-200 rounded px-1.5 py-1 bg-white text-gray-700 focus:outline-none focus:border-[#3ea36e]">
-                    {f.sheets.map((s) => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                )}
-              </div>
-              <button onClick={(e) => { e.stopPropagation(); removeFile(f.id); }} className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition" title="Remove">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+            (() => {
+              const check = headerCheck?.find((item) => item.id === f.id);
+              const status = !f.ready ? null : f.error ? (
+                <span className="text-[10px] font-semibold text-red-600">Error</span>
+              ) : check?.match ? (
+                <span className="inline-flex items-center gap-0.5 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                  <Check className="w-3 h-3" /> Match
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-0.5 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                  <AlertTriangle className="w-3 h-3" /> Different
+                </span>
+              );
+
+              return (
+                <FileRow
+                  key={f.id}
+                  index={i + 1}
+                  name={f.name}
+                  size={formatBytes(f.size)}
+                  badge={f.ext.replace('.', '')}
+                  loading={!f.ready}
+                  status={status}
+                  onRemove={() => removeFile(f.id)}
+                  meta={
+                    f.error ? (
+                      <span className="text-red-500">{f.error}</span>
+                    ) : (
+                      <>
+                        {formatNumber(f.estimatedRows)} rows • {(f.previewRows[headerIdx] || f.headers).length} columns
+                        {f.delimiterLabel && f.delimiterLabel !== '—' ? ` • ${f.delimiterLabel}` : ''}
+                      </>
+                    )
+                  }
+                />
+              );
+            })()
           ))}
+          <p className="pt-0.5 text-[11px] text-slate-500">
+            {files.length} file{files.length > 1 ? 's' : ''} • {formatBytes(totalBytesSel)} • ~{formatNumber(totalEstRows)} rows
+            {!allReady && <span className="ml-1 text-amber-600">• inspecting…</span>}
+          </p>
         </div>
       )}
 
@@ -433,7 +436,7 @@ export default function CombineTool() {
       <h2 className="section-title">Settings</h2>
       <p className="section-sub">Configure how files are combined</p>
 
-      <div className="mt-5 grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
+      <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-2.5 sm:grid-cols-2">
         <div>
           <label className="field-label">Start Row: <span className="text-red-500">*</span></label>
           <select value={startRow} onChange={(e) => setStartRow(e.target.value)}>
@@ -475,77 +478,10 @@ export default function CombineTool() {
         </div>
       </div>
 
-      <h2 className="section-label mt-6">Header Check</h2>
-      <div className="mt-3 panel">
-        {!files.length && <p className="text-[13px] text-slate-500">Import files to check column headers.</p>}
-        {files.length > 0 && headerCheck && (
-          <div className="overflow-hidden rounded-md border border-slate-200 bg-white">
-            <table className="w-full text-[12px]">
-              <thead>
-                <tr className="bg-slate-50 text-slate-500 text-left">
-                  <th className="px-3 py-2 font-semibold">File</th>
-                  <th className="px-3 py-2 font-semibold text-center w-16">Cols</th>
-                  <th className="px-3 py-2 font-semibold text-center w-24">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {headerCheck.map((h) => (
-                  <tr key={h.id}>
-                    <td className="px-3 py-2 text-slate-700 truncate max-w-[220px]" title={h.headers.join(', ')}>{h.name}</td>
-                    <td className="px-3 py-2 text-center text-slate-600 tabular-nums">{h.ready ? h.cols : '…'}</td>
-                    <td className="px-3 py-2 text-center">
-                      {!h.ready ? <span className="text-[11px] text-gray-400">…</span> : h.match
-                        ? <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600"><Check className="w-3.5 h-3.5" /> Match</span>
-                        : <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600"><AlertTriangle className="w-3.5 h-3.5" /> Different</span>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {hasMismatch && (
-              <div className="px-3 py-2 bg-amber-50 border-t border-amber-200 text-[12px] text-amber-700 flex items-start gap-1.5">
-                <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                <span>Column mismatch detected. Use “Match columns by name” to align by header names (missing → empty), or “Match by position”.</span>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      <button onClick={() => setShowAdvanced(!showAdvanced)} className="mt-3 text-[12px] font-semibold text-gray-500 hover:text-gray-800 flex items-center gap-1 transition">
-        Advanced &amp; Output Options
-        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
-      </button>
-      {showAdvanced && (
-        <div className="mt-2 rounded-md border border-gray-200 p-3.5 grid sm:grid-cols-2 gap-4 animate-fade-slide-in">
-          <div>
-            <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Output CSV</p>
-            <label className="block text-[12px] text-gray-600 mb-1">Delimiter</label>
-            <div className="flex gap-1.5 mb-2.5">
-              {[{ v: ',', l: ',' }, { v: ';', l: ';' }, { v: '	', l: 'Tab' }, { v: '|', l: '|' }].map((o) => (
-                <button key={o.l} onClick={() => setOutDelimiter(o.v)} className={`px-2.5 py-1 rounded text-[12px] font-bold border transition ${outDelimiter === o.v ? 'bg-[#0f2a4a] text-white border-[#0f2a4a]' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>{o.l}</button>
-              ))}
-            </div>
-            <label className="block text-[12px] text-gray-600 mb-1">Line ending</label>
-            <div className="flex gap-1.5">
-              {(['LF', 'CRLF'] as const).map((o) => (
-                <button key={o} onClick={() => setLineEnding(o)} className={`px-2.5 py-1 rounded text-[12px] font-bold border transition ${lineEnding === o ? 'bg-[#0f2a4a] text-white border-[#0f2a4a]' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>{o}</button>
-              ))}
-            </div>
-            <p className="text-[11px] text-gray-400 mt-2">Encoding: UTF-8 with BOM • Output always <span className="font-mono font-bold">.csv</span></p>
-          </div>
-          <div>
-            <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Cleaning (slower)</p>
-            {[
-              { v: trimWs, s: setTrimWs, l: 'Trim whitespace' },
-              { v: removeBlanks, s: setRemoveBlanks, l: 'Remove blank rows' },
-              { v: dedupe, s: setDedupe, l: 'Remove duplicate rows' },
-            ].map((o) => (
-              <label key={o.l} className="flex items-center gap-2 text-[12px] text-gray-600 py-1 cursor-pointer hover:text-gray-900">
-                <input type="checkbox" checked={o.v} onChange={() => o.s(!o.v)} className="w-3.5 h-3.5 rounded border-gray-300 accent-[#3ea36e]" /> {o.l}
-              </label>
-            ))}
-          </div>
+      {hasMismatch && (
+        <div className="mt-4 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-700">
+          <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+          <span>Different headers found. Select “Match columns by name” to align missing columns.</span>
         </div>
       )}
 
@@ -607,27 +543,6 @@ export default function CombineTool() {
         </button>
       </div>
 
-      {files.length > 0 && files[0]?.previewRows.length > 0 && !result && (
-        <div className="mt-4 rounded-md border border-gray-200 overflow-hidden">
-          <div className="px-3 py-2 bg-gray-50 border-b border-gray-200 flex items-center gap-1.5 text-[11px] font-bold text-gray-500 uppercase tracking-wide">
-            <Table2 className="w-3.5 h-3.5" /> Preview — {files[0].name}
-          </div>
-          <div className="x-scroll">
-            <table className="w-full text-[11px]">
-              <thead>
-                <tr className="bg-white">
-                  {(files[0].previewRows[headerIdx] || files[0].previewRows[0])?.map((h, i) => <th key={i} className="text-left px-2.5 py-1.5 font-bold text-gray-700 border-b border-gray-100 whitespace-nowrap max-w-[140px] truncate">{h || `Col ${i + 1}`}</th>)}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {files[0].previewRows.slice(headerIdx + 1, headerIdx + 4).map((r, i) => (
-                  <tr key={i} className="hover:bg-gray-50">{r.map((c, j) => <td key={j} className="px-2.5 py-1.5 text-gray-500 whitespace-nowrap max-w-[140px] truncate">{c}</td>)}</tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
