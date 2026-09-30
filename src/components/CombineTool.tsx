@@ -32,12 +32,13 @@ export default function CombineTool() {
   const [globalSheet, setGlobalSheet] = useState('');
   const [headerMode, setHeaderMode] = useState<HeaderMode>('validate');
   const [txtDelimiter, setTxtDelimiter] = useState('auto');
-  // fixed defaults (advanced options removed): comma CSV, LF, no cleaning
-  const outDelimiter = ',';
-  const lineEnding = 'LF' as 'LF' | 'CRLF';
-  const trimWs = false as boolean;
-  const removeBlanks = false as boolean;
-  const dedupe = false as boolean;
+  const [outDelimiter, setOutDelimiter] = useState(',');
+  const [lineEnding, setLineEnding] = useState<'LF' | 'CRLF'>('LF');
+  const [trimWs, setTrimWs] = useState(false);
+  const [removeBlanks, setRemoveBlanks] = useState(false);
+  const [dedupe, setDedupe] = useState(false);
+  // setters are still used by the (currently hidden) advanced panel below
+  void setOutDelimiter; void setLineEnding; void setTrimWs; void setRemoveBlanks; void setDedupe;
 
   const [processing, setProcessing] = useState(false);
   const [prog, setProg] = useState({ percent: 0, rows: 0, bytesDone: 0, totalBytes: 0, filesDone: 0, speed: 0, etaMs: 0, elapsed: 0, currentFile: '' });
@@ -436,7 +437,7 @@ export default function CombineTool() {
       <h2 className="section-title">Settings</h2>
       <p className="section-sub">Configure how files are combined</p>
 
-      <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-2.5 sm:grid-cols-2">
+      <div className="mt-5 grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
         <div>
           <label className="field-label">Start Row: <span className="text-red-500">*</span></label>
           <select value={startRow} onChange={(e) => setStartRow(e.target.value)}>
@@ -482,6 +483,38 @@ export default function CombineTool() {
         <div className="mt-4 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-700">
           <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
           <span>Different headers found. Select “Match columns by name” to align missing columns.</span>
+        </div>
+      )}
+
+      {/* Advanced & Output Options — removed */}
+      {false && (
+        <div style={{ display: 'none' }} data-removed>
+          <div data-removed>
+            <div className="flex gap-1.5 mb-2.5">
+              {[{ v: ',', l: ',' }, { v: ';', l: ';' }, { v: '	', l: 'Tab' }, { v: '|', l: '|' }].map((o) => (
+                <button key={o.l} onClick={() => setOutDelimiter(o.v)} className={`px-2.5 py-1 rounded text-[12px] font-bold border transition ${outDelimiter === o.v ? 'bg-[#0f2a4a] text-white border-[#0f2a4a]' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>{o.l}</button>
+              ))}
+            </div>
+            <label className="block text-[12px] text-gray-600 mb-1">Line ending</label>
+            <div className="flex gap-1.5">
+              {(['LF', 'CRLF'] as const).map((o) => (
+                <button key={o} onClick={() => setLineEnding(o)} className={`px-2.5 py-1 rounded text-[12px] font-bold border transition ${lineEnding === o ? 'bg-[#0f2a4a] text-white border-[#0f2a4a]' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>{o}</button>
+              ))}
+            </div>
+            <p className="text-[11px] text-gray-400 mt-2">Encoding: UTF-8 with BOM • Output always <span className="font-mono font-bold">.csv</span></p>
+          </div>
+          <div>
+            <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Cleaning (slower)</p>
+            {[
+              { v: trimWs, s: setTrimWs, l: 'Trim whitespace' },
+              { v: removeBlanks, s: setRemoveBlanks, l: 'Remove blank rows' },
+              { v: dedupe, s: setDedupe, l: 'Remove duplicate rows' },
+            ].map((o) => (
+              <label key={o.l} className="flex items-center gap-2 text-[12px] text-gray-600 py-1 cursor-pointer hover:text-gray-900">
+                <input type="checkbox" checked={o.v} onChange={() => o.s(!o.v)} className="w-3.5 h-3.5 rounded border-gray-300 accent-[#3ea36e]" /> {o.l}
+              </label>
+            ))}
+          </div>
         </div>
       )}
 

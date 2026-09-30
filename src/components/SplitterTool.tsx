@@ -29,11 +29,11 @@ export default function SplitterTool() {
   const [fileCount, setFileCount] = useState('10');
   const [maxSizeMB, setMaxSizeMB] = useState('500');
   const [includeHeader, setIncludeHeader] = useState(true);
+  const [outDelimiter, setOutDelimiter] = useState(',');
   const [processAllSheets, setProcessAllSheets] = useState(false);
-  // fixed defaults (advanced options removed): comma CSV, no cleaning
-  const outDelimiter = ',';
-  const trimWs = false;
-  const removeBlanks = false;
+  const [showAdvanced] = useState(false);
+  const [trimWs, setTrimWs] = useState(false);
+  const [removeBlanks, setRemoveBlanks] = useState(false);
 
   const [processing, setProcessing] = useState(false);
   const [prog, setProg] = useState({ percent: 0, parts: 0, total: 0, rows: 0, bytesDone: 0, totalBytes: 0, speed: 0, etaMs: 0, elapsed: 0, current: '' });
@@ -357,7 +357,7 @@ export default function SplitterTool() {
       <h2 className="section-title">Settings</h2>
       <p className="section-sub">Configure how the file is split</p>
 
-      <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-2.5 sm:grid-cols-2">
+      <div className="mt-5 grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
         <div>
           <label className="field-label">Split Method: <span className="text-red-500">*</span></label>
           <select value={method} onChange={(e) => setMethod(e.target.value as Method)}>
@@ -397,6 +397,26 @@ export default function SplitterTool() {
         <input type="checkbox" checked={includeHeader} onChange={() => setIncludeHeader(!includeHeader)} />
         Include header in every output file
       </label>
+
+{/* Advanced & Output Options — removed */}
+      {showAdvanced && (
+        <div className="mt-2 rounded-md border border-gray-200 p-3.5 grid sm:grid-cols-2 gap-4 animate-fade-slide-in">
+          <div>
+            <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Output CSV delimiter</p>
+            <div className="flex gap-1.5">
+              {[{ v: ',', l: ',' }, { v: ';', l: ';' }, { v: '	', l: 'Tab' }, { v: '|', l: '|' }].map((o) => (
+                <button key={o.l} onClick={() => setOutDelimiter(o.v)} className={`px-2.5 py-1 rounded text-[12px] font-bold border transition ${outDelimiter === o.v ? 'bg-[#0f2a4a] text-white border-[#0f2a4a]' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>{o.l}</button>
+              ))}
+            </div>
+            <p className="text-[11px] text-gray-400 mt-2">UTF-8 with BOM • LF line endings • Always <span className="font-mono font-bold">.csv</span></p>
+          </div>
+          <div>
+            <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Cleaning</p>
+            <label className="flex items-center gap-2 text-[12px] text-gray-600 py-1 cursor-pointer"><input type="checkbox" checked={trimWs} onChange={() => setTrimWs(!trimWs)} className="w-3.5 h-3.5 accent-[#3ea36e]" /> Trim whitespace</label>
+            <label className="flex items-center gap-2 text-[12px] text-gray-600 py-1 cursor-pointer"><input type="checkbox" checked={removeBlanks} onChange={() => setRemoveBlanks(!removeBlanks)} className="w-3.5 h-3.5 accent-[#3ea36e]" /> Remove blank rows</label>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="mt-3 rounded-md bg-red-50 border border-red-200 px-3 py-2.5 text-[12px] text-red-700 flex items-start gap-2 animate-fade-slide-in">
