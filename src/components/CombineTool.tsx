@@ -37,6 +37,8 @@ export default function CombineTool() {
   const [trimWs, setTrimWs] = useState(false);
   const [removeBlanks, setRemoveBlanks] = useState(false);
   const [dedupe, setDedupe] = useState(false);
+  const [addSource, setAddSource] = useState(true);
+  const [sourceColName, setSourceColName] = useState('Source File');
   // setters are still used by the (currently hidden) advanced panel below
   void setOutDelimiter; void setLineEnding; void setTrimWs; void setRemoveBlanks; void setDedupe;
 
@@ -250,7 +252,8 @@ export default function CombineTool() {
                   if (isFirstFile) {
                     outHeader = [...fileHeader];
                     outCols = outHeader.length;
-                    blobParts.push(outHeader.map((c) => escapeCsv(c, outDelimiter)).join(outDelimiter) + eol);
+                    const hdr = addSource ? [...outHeader, sourceColName] : outHeader;
+                    blobParts.push(hdr.map((c) => escapeCsv(c, outDelimiter)).join(outDelimiter) + eol);
                   } else if (headerMode === 'byName') {
                     idxMap = outHeader.map((h) => fileHeader!.findIndex((fh) => String(fh).trim().toLowerCase() === String(h).trim().toLowerCase()));
                   }
@@ -273,6 +276,7 @@ export default function CombineTool() {
                   if (seen.has(k)) continue;
                   seen.add(k);
                 }
+                if (addSource) mapped.push(f.name);
                 outBatch.push(mapped);
               }
               if (outBatch.length) {
@@ -306,7 +310,8 @@ export default function CombineTool() {
           if (fi === 0) {
             outHeader = [...fileHeader];
             outCols = outHeader.length;
-            blobParts.push(outHeader.map((c) => escapeCsv(c, outDelimiter)).join(outDelimiter) + eol);
+            const hdr = addSource ? [...outHeader, sourceColName] : outHeader;
+            blobParts.push(hdr.map((c) => escapeCsv(c, outDelimiter)).join(outDelimiter) + eol);
           } else if (headerMode === 'byName') {
             idxMap = outHeader.map((h) => fileHeader.findIndex((fh) => String(fh).trim().toLowerCase() === String(h).trim().toLowerCase()));
           }
@@ -333,6 +338,7 @@ export default function CombineTool() {
                 if (seen.has(key)) continue;
                 seen.add(key);
               }
+              if (addSource) mapped.push(f.name);
               outBatch[kept++] = mapped;
             }
             outBatch.length = kept;
@@ -366,7 +372,7 @@ export default function CombineTool() {
     } finally {
       setProcessing(false);
     }
-  }, [files, processing, headerMode, hasMismatch, trimWs, removeBlanks, dedupe, outDelimiter, lineEnding, headerIdx]);
+  }, [files, processing, headerMode, hasMismatch, trimWs, removeBlanks, dedupe, outDelimiter, lineEnding, headerIdx, addSource, sourceColName]);
 
   const allReady = files.length > 0 && files.every((f) => f.ready);
   const totalEstRows = files.reduce((s, f) => s + (f.estimatedRows || 0), 0);
@@ -476,6 +482,26 @@ export default function CombineTool() {
             <option value="byName">Match columns by name</option>
             <option value="byPosition">Match columns by position</option>
           </select>
+        </div>
+
+        <div className="sm:col-span-2">
+          <label className="flex items-center gap-2 text-[13px] font-medium text-slate-700 cursor-pointer">
+            <input type="checkbox" checked={addSource} onChange={() => setAddSource(!addSource)} />
+            Add source file name column
+          </label>
+          {addSource && (
+            <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-2 items-center">
+              <input
+                type="text"
+                value={sourceColName}
+                onChange={(e) => setSourceColName(e.target.value)}
+                placeholder="Source File"
+              />
+              <p className="text-[12px] leading-5 text-slate-500">
+                Each row gets the name of the file it came from, e.g. <span className="font-mono text-[11px]">file1.csv</span>.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
