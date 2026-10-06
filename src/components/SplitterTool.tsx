@@ -19,7 +19,7 @@ interface Loaded {
   ready: boolean;
 }
 
-type Method = 'rows' | 'count' | 'size';
+type Method = 'rows' | 'count' | 'size' | 'column';
 const GREEN = 'bg-[#3ea36e] hover:bg-[#35925f]';
 
 export default function SplitterTool() {
@@ -28,6 +28,7 @@ export default function SplitterTool() {
   const [rowsPerFile, setRowsPerFile] = useState('100000');
   const [fileCount, setFileCount] = useState('10');
   const [maxSizeMB, setMaxSizeMB] = useState('500');
+  const [groupColumn, setGroupColumn] = useState('');
   const [includeHeader, setIncludeHeader] = useState(true);
   const [outDelimiter, setOutDelimiter] = useState(',');
   const [processAllSheets, setProcessAllSheets] = useState(false);
@@ -51,6 +52,7 @@ export default function SplitterTool() {
     setError(null);
     setParts([]);
     setStats(null);
+    setGroupColumn('');
     const ext = getExtension(file.name);
     // instant placeholder
     setData({ file, name: file.name, size: file.size, ext, delimiter: ',', delimiterLabel: '—', sheets: [], selectedSheet: '', headers: [], previewRows: [], estimatedRows: 0, ready: false });
@@ -93,6 +95,7 @@ export default function SplitterTool() {
       setData({ ...data, selectedSheet: sheet, headers: full.headers, previewRows: full.rows.slice(0, 6), estimatedRows: full.totalRows, ready: true });
       setParts([]);
       setStats(null);
+      setGroupColumn('');
     } catch {
       setError(`Could not read sheet "${sheet}".`);
       setTimeout(() => setError(null), 3000);
@@ -114,12 +117,68 @@ export default function SplitterTool() {
   const estimatedParts = (() => {
     if (!data || !data.ready) return 0;
     const n = Math.max(1, data.estimatedRows);
+    if (method === 'column') return 0; // unknown until the file is scanned
     if (method === 'rows') return Math.max(1, Math.ceil(n / Math.max(1, parseInt(rowsPerFile) || 1)));
     if (method === 'count') return Math.max(1, parseInt(fileCount) || 1);
     const avg = Math.max(30, data.size / n);
     const rowsPerChunk = Math.max(1, Math.floor(((parseFloat(maxSizeMB) || 500) * 1024 * 1024) / avg));
     return Math.max(1, Math.ceil(n / rowsPerChunk));
   })();
+
+  /** Split one table into one CSV per distinct value of the chosen column. */
+  const splitByColumn = useCallback(
+    async (
+      headers: string[],
+      rows: string[][],
+      colIndex: number,
+      baseName: string,
+      sheetName: string,
+      out: { name: string; url: string; size: number; rows: number }[],
+      onGroupDone: (rowsDone: number, groupsDone: number, totalGroups: number, label: string) => void,
+      maybeYield: () => Promise<void>,
+    ) => {
+      const eol = '\n';
+      const groups = new Map<string, string[][]>();
+
+      // bucket rows by the column value (blank -> "(blank)")
+      for (let i = 0; i < rows.length; i++) {
+        if (cancelRef.current) throw new Error('cancelled');
+        const raw = String(rows[i][colIndex] ?? '').trim();
+        const key = raw === '' ? '(blank)' : raw;
+        let bucket = groups.get(key);
+        if (!bucket) { bucket = []; groups.set(key, bucket); }
+        bucket.push(rows[i]);
+        if (i % 20000 === 0) await maybeYield();
+      }
+
+      if (!groups.size) throw new Error('No rows to group.');
+
+      const sorted = Array.from(groups.keys()).sort((a, b) => a.localeCompare(b));
+      const suffix = sheetName ? `_${sanitizeFileName(sheetName)}` : '';
+      let rowsDone = 0;
+      let groupsDone = 0;
+
+      for (const key of sorted) {
+        if (cancelRef.current) throw new Error('cancelled');
+        const slice = groups.get(key)!;
+        const body = includeHeader ? [headers, ...slice] : slice;
+        const csv = rowsToCsv(body, outDelimiter) + eol;
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const safe = sanitizeFileName(key) || 'blank';
+        const name = `${baseName}${suffix}_${safe}.csv`;
+        out.push({ name, url, size: blob.size, rows: slice.length });
+        setParts([...out]);
+        rowsDone += slice.length;
+        groupsDone++;
+        onGroupDone(rowsDone, groupsDone, sorted.length, name);
+        await maybeYield();
+      }
+
+      return { rowsDone, groups: sorted.length };
+    },
+    [includeHeader, outDelimiter],
+  );
 
   const handleSplit = useCallback(async () => {
     if (!data || !data.ready || processing) return;
@@ -148,7 +207,85 @@ export default function SplitterTool() {
     };
 
     try {
-      if (isTextExt(data.ext)) {
+      if (method === 'column') {
+        // ---------- split by distinct value of a column ----------
+        const colIndex = data.headers.findIndex((h) => h === groupColumn);
+        if (colIndex < 0) throw new Error('Choose a column to group by.');
+
+        const jobs: { sheetName: string; headers: string[]; rows: string[][] }[] = [];
+
+        if (isTextExt(data.ext)) {
+          // read the whole text file into rows (grouping needs every row)
+          const all: string[][] = [];
+          let header: string[] | null = null;
+          await streamTextFile(data.file, data.delimiter, {
+            shouldCancel: () => cancelRef.current,
+            onProgress: (br) => renderBytes(br, out.length, 0, 'Scanning rows…'),
+            onBatch: async (batch) => {
+              for (const row of batch) {
+                if (!header) {
+                  header = row.map((c) => (trimWs ? String(c ?? '').trim() : String(c ?? '')));
+                  continue;
+                }
+                let r = row.map((c) => (trimWs ? String(c ?? '').trim() : String(c ?? '')));
+                if (r.length < header.length) r = r.concat(new Array(header.length - r.length).fill(''));
+                else if (r.length > header.length) r = r.slice(0, header.length);
+                if (removeBlanks && r.every((c) => c === '')) continue;
+                all.push(r);
+              }
+            },
+          });
+          if (cancelRef.current) throw new Error('cancelled');
+          jobs.push({ sheetName: '', headers: header ?? data.headers, rows: all });
+        } else if (processAllSheets && data.sheets.length > 1) {
+          for (const sh of data.sheets) {
+            if (cancelRef.current) throw new Error('cancelled');
+            setProg((p) => ({ ...p, current: `Reading ${sh}…` }));
+            const full = await loadExcelSheetFull(data.file, sh);
+            let rows = full.rows.slice(1).map((r) => r.map((c) => (trimWs ? String(c ?? '').trim() : String(c ?? ''))));
+            if (removeBlanks) rows = rows.filter((r) => !r.every((c) => c === ''));
+            if (rows.length) jobs.push({ sheetName: sh, headers: full.headers, rows });
+          }
+          if (!jobs.length) throw new Error('No sheets contain data.');
+        } else {
+          setProg((p) => ({ ...p, current: `Reading ${data.selectedSheet}…` }));
+          const full = await loadExcelSheetFull(data.file, data.selectedSheet);
+          let rows = full.rows.slice(1).map((r) => r.map((c) => (trimWs ? String(c ?? '').trim() : String(c ?? ''))));
+          if (removeBlanks) rows = rows.filter((r) => !r.every((c) => c === ''));
+          jobs.push({ sheetName: '', headers: full.headers, rows });
+        }
+
+        const totalAllRows = jobs.reduce((s, j) => s + j.rows.length, 0);
+        let rowsSoFar = 0;
+
+        for (const job of jobs) {
+          const idx = job.headers.findIndex((h) => String(h).trim() === groupColumn) >= 0
+            ? job.headers.findIndex((h) => String(h).trim() === groupColumn)
+            : colIndex;
+          const startRows = rowsSoFar;
+          const res = await splitByColumn(
+            job.headers,
+            job.rows,
+            idx,
+            baseName,
+            job.sheetName,
+            out,
+            (rowsDone, groupsDone, totalGroups, label) => {
+              const fracBytes = totalAllRows ? ((startRows + rowsDone) / totalAllRows) * data.size : data.size;
+              totalRowsDone = startRows + rowsDone;
+              const snap = tracker.update(fracBytes, totalRowsDone, true);
+              if (snap) setProg({ percent: snap.percent, parts: out.length, total: Math.max(totalGroups, out.length), rows: snap.rows, bytesDone: snap.bytesDone, totalBytes: snap.totalBytes, speed: snap.speed, etaMs: snap.etaMs, elapsed: snap.elapsed, current: label });
+              void groupsDone;
+            },
+            maybeYield,
+          );
+          rowsSoFar += res.rowsDone;
+        }
+
+        const doneSnap = tracker.complete(rowsSoFar);
+        setStats({ rows: rowsSoFar, ms: doneSnap.elapsed });
+        setProg({ percent: 100, parts: out.length, total: out.length, rows: doneSnap.rows, bytesDone: doneSnap.bytesDone, totalBytes: doneSnap.totalBytes, speed: doneSnap.speed, etaMs: 0, elapsed: doneSnap.elapsed, current: '' });
+      } else if (isTextExt(data.ext)) {
         // ---------- streaming text split ----------
         // determine chunk target
         let rowsTarget = Math.max(1, parseInt(rowsPerFile) || 100000);
@@ -299,7 +436,7 @@ export default function SplitterTool() {
     } finally {
       setProcessing(false);
     }
-  }, [data, processing, method, rowsPerFile, fileCount, maxSizeMB, includeHeader, outDelimiter, processAllSheets, trimWs, removeBlanks, estimatedParts, parts]);
+  }, [data, processing, method, rowsPerFile, fileCount, maxSizeMB, includeHeader, outDelimiter, processAllSheets, trimWs, removeBlanks, estimatedParts, parts, groupColumn, splitByColumn]);
 
   const downloadAll = () => {
     parts.forEach((p, i) => {
@@ -364,16 +501,46 @@ export default function SplitterTool() {
             <option value="rows">Rows per file</option>
             <option value="count">Number of files</option>
             <option value="size">Maximum file size</option>
+            <option value="column">By column value (group)</option>
           </select>
         </div>
         <div>
           <label className="field-label">
-            {method === 'rows' ? 'Rows per file:' : method === 'count' ? 'Number of files:' : 'Maximum size (MB):'} <span className="text-red-500">*</span>
+            {method === 'rows'
+              ? 'Rows per file:'
+              : method === 'count'
+              ? 'Number of files:'
+              : method === 'size'
+              ? 'Maximum size (MB):'
+              : 'Group by column:'}{' '}
+            <span className="text-red-500">*</span>
           </label>
           {method === 'rows' && <input type="number" min={1} value={rowsPerFile} onChange={(e) => setRowsPerFile(e.target.value)} />}
           {method === 'count' && <input type="number" min={2} max={999} value={fileCount} onChange={(e) => setFileCount(e.target.value)} />}
           {method === 'size' && <input type="number" min={1} value={maxSizeMB} onChange={(e) => setMaxSizeMB(e.target.value)} />}
+          {method === 'column' && (
+            <select
+              value={groupColumn}
+              onChange={(e) => setGroupColumn(e.target.value)}
+              disabled={!data?.ready || !data.headers.length}
+            >
+              <option value="">
+                {data?.ready && data.headers.length ? 'Select a column…' : 'Import a file first…'}
+              </option>
+              {data?.headers.map((h, i) => (
+                <option key={`${h}-${i}`} value={h}>{h || `Column ${i + 1}`}</option>
+              ))}
+            </select>
+          )}
         </div>
+
+        {method === 'column' && (
+          <p className="sm:col-span-2 -mt-1 text-[12px] leading-5 text-slate-500">
+            One CSV per distinct value — e.g. a <span className="font-medium text-slate-700">Region</span> column
+            produces <span className="font-mono text-[11px]">{(data?.name.replace(/\.[^.]+$/, '') || 'name')}_Yangon.csv</span>,{' '}
+            <span className="font-mono text-[11px]">{(data?.name.replace(/\.[^.]+$/, '') || 'name')}_Bago.csv</span>…
+          </p>
+        )}
       </div>
 
       {data && data.ready && (data.ext === '.xlsx' || data.ext === '.xls') && (
@@ -476,7 +643,7 @@ export default function SplitterTool() {
 
       <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5 mt-6">
         <button onClick={clearAll} className="w-full sm:w-auto px-5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50 active:bg-slate-100 transition">Clear All</button>
-        <button onClick={handleSplit} disabled={!data || !data.ready || processing} className={`w-full sm:w-auto px-6 py-2.5 rounded-md text-white text-sm font-semibold shadow-sm transition disabled:opacity-40 disabled:cursor-not-allowed ${GREEN}`}>
+        <button onClick={handleSplit} disabled={!data || !data.ready || processing || (method === 'column' && !groupColumn)} className={`w-full sm:w-auto px-6 py-2.5 rounded-md text-white text-sm font-semibold shadow-sm transition disabled:opacity-40 disabled:cursor-not-allowed ${GREEN}`}>
           {processing ? `${prog.percent}% Splitting…` : 'Split File'}
         </button>
       </div>
